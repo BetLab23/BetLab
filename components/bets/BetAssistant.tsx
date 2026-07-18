@@ -221,6 +221,32 @@ export function BetAssistant({
       .replace(/[.!?]+$/g, "")
       .trim();
 
+    if (normalizedCommand === "fin batmobile") {
+      setPersonasUnlocked(false);
+      setCopilotMode("alfred");
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: "user",
+          content: cleanQuestion,
+        },
+        {
+          role: "assistant",
+          title: "Accès spécial refermé",
+          content:
+            "Retour au mode Alfred. Lara et le mode Duo sont désormais masqués.",
+          highlights: [
+            "Mode Alfred",
+            "Copilotes masqués",
+          ],
+        },
+      ]);
+
+      setQuestion("");
+      return;
+    }
+
     if (
       copilotMode === "alfred" &&
       normalizedCommand === "batmobile"
