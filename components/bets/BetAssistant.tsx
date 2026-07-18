@@ -173,7 +173,9 @@ export function BetAssistant({
     ConversationMessage[]
   >([]);
   const [copilotMode, setCopilotMode] =
-    useState<CopilotMode>("duo");
+    useState<CopilotMode>("alfred");
+  const [personasUnlocked, setPersonasUnlocked] =
+    useState(false);
 
   const copilotIdentity =
     copilotMode === "alfred"
@@ -213,6 +215,39 @@ export function BetAssistant({
     const cleanQuestion = rawQuestion.trim();
 
     if (!cleanQuestion) return;
+
+    const normalizedCommand = cleanQuestion
+      .toLocaleLowerCase("fr-FR")
+      .replace(/[.!?]+$/g, "")
+      .trim();
+
+    if (
+      copilotMode === "alfred" &&
+      normalizedCommand === "batmobile"
+    ) {
+      setPersonasUnlocked(true);
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: "user",
+          content: cleanQuestion,
+        },
+        {
+          role: "assistant",
+          title: "Accès copilotes déverrouillé",
+          content:
+            "Code reconnu. Lara et le mode Duo sont désormais disponibles.",
+          highlights: [
+            "Lara activée",
+            "Mode Duo activé",
+          ],
+        },
+      ]);
+
+      setQuestion("");
+      return;
+    }
 
     const result: AnalysisAnswer = answerBetQuestion(
       cleanQuestion,
@@ -283,51 +318,53 @@ export function BetAssistant({
         </div>
 
         <div className="bet-assistant-actions">
-          <div
-            className="copilot-selector"
-            role="group"
-            aria-label="Choisir le copilote"
-          >
-            <button
-              type="button"
-              className={
-                copilotMode === "alfred" ? "active" : ""
-              }
-              onClick={() => setCopilotMode("alfred")}
+          {personasUnlocked && (
+            <div
+              className="copilot-selector"
+              role="group"
+              aria-label="Choisir le copilote"
             >
-              <img
-                src="/alfred-avatar.png"
-                alt=""
-                aria-hidden="true"
-              />
-              Alfred
-            </button>
+              <button
+                type="button"
+                className={
+                  copilotMode === "alfred" ? "active" : ""
+                }
+                onClick={() => setCopilotMode("alfred")}
+              >
+                <img
+                  src="/alfred-avatar.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                Alfred
+              </button>
 
-            <button
-              type="button"
-              className={
-                copilotMode === "lara" ? "active" : ""
-              }
-              onClick={() => setCopilotMode("lara")}
-            >
-              <img
-                src="/lara-avatar.png"
-                alt=""
-                aria-hidden="true"
-              />
-              Lara
-            </button>
+              <button
+                type="button"
+                className={
+                  copilotMode === "lara" ? "active" : ""
+                }
+                onClick={() => setCopilotMode("lara")}
+              >
+                <img
+                  src="/lara-avatar.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                Lara
+              </button>
 
-            <button
-              type="button"
-              className={
-                copilotMode === "duo" ? "active" : ""
-              }
-              onClick={() => setCopilotMode("duo")}
-            >
-              Duo
-            </button>
-          </div>
+              <button
+                type="button"
+                className={
+                  copilotMode === "duo" ? "active" : ""
+                }
+                onClick={() => setCopilotMode("duo")}
+              >
+                Duo
+              </button>
+            </div>
+          )}
 
           <div className="bet-assistant-online">
             <span />
@@ -882,7 +919,7 @@ export function BetAssistant({
           onChange={(event) =>
             setQuestion(event.target.value)
           }
-          placeholder="Ex. Pourquoi je perds ?"
+          placeholder="Pose une question à Alfred..."
           aria-label="Question pour l’assistante BetLab"
         />
 
