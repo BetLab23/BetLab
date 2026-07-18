@@ -24,3 +24,9 @@ button,input{font:inherit}.shell{display:grid;grid-template-columns:250px 1fr;mi
 .modal-actions{display:flex;justify-content:flex-end;gap:10px}.primary:disabled{opacity:.6;cursor:wait}.form-error,.app-alert{padding:11px 13px;border:1px solid rgba(227,109,109,.5);border-radius:10px;background:rgba(227,109,109,.1);color:#ffb3b3}.app-alert{margin-bottom:15px}
 .recent-bets{display:grid}.recent-bet{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line)}.recent-bet:last-child{border-bottom:0}.recent-bet small,.table-subtitle{display:block;color:var(--muted);margin-top:4px}.recent-bet-value{text-align:right}.bet-status{display:inline-block;padding:5px 8px;border-radius:999px;background:var(--panel2);font-size:11px;text-transform:capitalize}.bet-status.pending{color:#ffc978}.bet-status.win{color:#6ce4b8}.bet-status.loss{color:#ff9b9b}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}.modal-backdrop{padding:8px}.modal-card{max-height:96vh}.modal-actions{position:sticky;bottom:0;padding-top:10px;background:#0c1828}}
+
+/* Bet editing and settlement — Core 0.3.1 */
+.bet-form select{width:100%;background:#071321;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:11px}
+.recent-bet{width:100%;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.recent-bet:hover{background:rgba(113,167,255,.05)}
+.clickable-row{cursor:pointer}.clickable-row:hover{background:rgba(113,167,255,.06)}
+.settle-actions{display:flex;gap:10px;flex-wrap:wrap}.settle{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel2);color:var(--text);font-weight:750;cursor:pointer}.settle.win{color:#6ce4b8}.settle.loss{color:#ff9b9b}.settle.void{color:#ffc978}

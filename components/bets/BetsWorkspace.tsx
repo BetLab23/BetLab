@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { listBets } from "@/lib/bets/client";
 import type { Bet } from "@/lib/bets/types";
 import { NewBetModal } from "./NewBetModal";
+import { EditBetModal } from "./EditBetModal";
 
 function euros(value: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
@@ -21,6 +22,7 @@ export function BetsWorkspace({ mode }: { mode: "dashboard" | "bets" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedBet, setSelectedBet] = useState<Bet | null>(null);
 
   useEffect(() => {
     listBets()
@@ -44,6 +46,10 @@ export function BetsWorkspace({ mode }: { mode: "dashboard" | "bets" }) {
     setBets((current) => [bet, ...current]);
   }
 
+  function replaceBet(bet: Bet) {
+    setBets((current) => current.map((item) => item.id === bet.id ? bet : item));
+  }
+
   const header = mode === "dashboard"
     ? <PageHeader title="Dashboard" subtitle="Vue d'ensemble de ton activité" action={<button className="primary" onClick={()=>setModalOpen(true)}>+ Nouveau pari</button>}/>
     : <PageHeader title="Paris" subtitle="Saisie, suivi et historique" action={<button className="primary" onClick={()=>setModalOpen(true)}>+ Ajouter</button>}/>;
@@ -60,28 +66,29 @@ export function BetsWorkspace({ mode }: { mode: "dashboard" | "bets" }) {
         <KpiCard label="Paris ouverts" value={String(metrics.open)} detail={`Exposition : ${euros(metrics.exposure)}`}/>
       </div>
       <div className="two-cols">
-        <article className="card"><h2>Paris récents</h2><BetRows bets={bets.slice(0,5)} loading={loading}/></article>
+        <article className="card"><h2>Paris récents</h2><BetRows bets={bets.slice(0,5)} loading={loading} onSelect={setSelectedBet}/></article>
         <article className="card"><h2>À analyser</h2><div className="empty">Aucun match sélectionné.</div></article>
       </div>
     </>}
 
-    {mode === "bets" && <article className="card table-card"><BetsTable bets={bets} loading={loading}/></article>}
+    {mode === "bets" && <article className="card table-card"><BetsTable bets={bets} loading={loading} onSelect={setSelectedBet}/></article>}
     <NewBetModal open={modalOpen} onClose={()=>setModalOpen(false)} onCreated={addBet}/>
+    <EditBetModal bet={selectedBet} onClose={()=>setSelectedBet(null)} onUpdated={replaceBet}/>
   </section>;
 }
 
-function BetRows({ bets, loading }: { bets: Bet[]; loading: boolean }) {
+function BetRows({ bets, loading, onSelect }: { bets: Bet[]; loading: boolean; onSelect: (bet: Bet) => void }) {
   if (loading) return <div className="empty">Chargement…</div>;
   if (!bets.length) return <div className="empty">Aucun pari enregistré.</div>;
-  return <div className="recent-bets">{bets.map((bet)=><div className="recent-bet" key={bet.id}>
+  return <div className="recent-bets">{bets.map((bet)=><button type="button" className="recent-bet" key={bet.id} onClick={()=>onSelect(bet)}>
     <div><strong>{bet.home_team} – {bet.away_team}</strong><small>{bet.market} · {bet.selection}</small></div>
     <div className="recent-bet-value"><strong>{Number(bet.odds).toFixed(2)}</strong><small>{euros(Number(bet.stake))}</small></div>
-  </div>)}</div>;
+  </button>)}</div>;
 }
 
-function BetsTable({ bets, loading }: { bets: Bet[]; loading: boolean }) {
+function BetsTable({ bets, loading, onSelect }: { bets: Bet[]; loading: boolean; onSelect: (bet: Bet) => void }) {
   return <table><thead><tr><th>Date</th><th>Match</th><th>Marché</th><th>Bookmaker</th><th>Cote</th><th>Mise</th><th>Statut</th><th>P/L</th></tr></thead>
-    <tbody>{loading ? <tr><td colSpan={8} className="empty-cell">Chargement…</td></tr> : bets.length ? bets.map((bet)=><tr key={bet.id}>
+    <tbody>{loading ? <tr><td colSpan={8} className="empty-cell">Chargement…</td></tr> : bets.length ? bets.map((bet)=><tr key={bet.id} className="clickable-row" onClick={()=>onSelect(bet)}>
       <td>{date(bet.kickoff_at ?? bet.created_at)}</td><td>{bet.home_team} – {bet.away_team}</td><td>{bet.market}<small className="table-subtitle">{bet.selection}</small></td><td>{bet.bookmaker}</td><td>{Number(bet.odds).toFixed(2)}</td><td>{euros(Number(bet.stake))}</td><td><span className={`bet-status ${bet.status}`}>{bet.status}</span></td><td>{bet.profit_loss == null ? "—" : euros(Number(bet.profit_loss))}</td>
     </tr>) : <tr><td colSpan={8} className="empty-cell">Aucun pari enregistré.</td></tr>}</tbody></table>;
 }

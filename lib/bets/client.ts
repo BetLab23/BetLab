@@ -1,6 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import type { Bet, NewBetInput } from "./types";
+import type { Bet, NewBetInput, UpdateBetInput } from "./types";
 
 function getSupabase(): SupabaseClient {
   const supabase = createClient();
@@ -50,6 +50,20 @@ export async function createBet(input: NewBetInput): Promise<Bet> {
       status: "pending",
       profit_loss: null,
     })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as Bet;
+}
+
+export async function updateBet(id: string, input: UpdateBetInput): Promise<Bet> {
+  const { supabase, user } = await ensureAnonymousUser();
+  const { data, error } = await supabase
+    .from("bets")
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id)
     .select("*")
     .single();
 

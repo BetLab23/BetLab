@@ -35,3 +35,14 @@ export type NewBetInput = {
   confidence: number | null;
   notes: string | null;
 };
+
+export type UpdateBetInput = {
+  kickoff_at: string | null;
+  bookmaker: string;
+  odds: number;
+  stake: number;
+  confidence: number | null;
+  notes: string | null;
+  status: BetStatus;
+  profit_loss: number | null;
+};
