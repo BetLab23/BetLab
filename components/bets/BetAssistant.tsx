@@ -6,6 +6,7 @@ import {
   generateProactiveInsights,
 } from "@/lib/bets/analysis/engine";
 import { calculateDecisionScore } from "@/lib/bets/analysis/decisionScore";
+import { generateCoachReport } from "@/lib/bets/analysis/coach";
 import type {
   AnalysisAnswer,
   DecisionScoreComponent,
@@ -158,6 +159,11 @@ export function BetAssistant({
   const decisionScore = useMemo(
     () => calculateDecisionScore(bets),
     [bets]
+  );
+
+  const coachReport = useMemo(
+    () => generateCoachReport(bets, decisionScore),
+    [bets, decisionScore]
   );
 
   const [question, setQuestion] = useState("");
@@ -449,6 +455,176 @@ export function BetAssistant({
             )}
           </div>
         )}
+      </div>
+
+      <div className="coach-report">
+        <div className="coach-report-header">
+          <div>
+            <span className="bet-assistant-section-label">
+              AI Coach
+            </span>
+
+            <h3>Diagnostic de ton processus</h3>
+          </div>
+
+          <span
+            className={`coach-report-status ${
+              coachReport.isReliable
+                ? "reliable"
+                : "provisional"
+            }`}
+          >
+            {coachReport.isReliable
+              ? "Diagnostic fiable"
+              : "Diagnostic provisoire"}
+          </span>
+        </div>
+
+        <p className="coach-report-summary">
+          {coachReport.summary}
+        </p>
+
+        <div className="coach-report-meta">
+          <span>
+            {coachReport.sampleSize} pari
+            {coachReport.sampleSize > 1 ? "s" : ""} analysé
+            {coachReport.sampleSize > 1 ? "s" : ""}
+          </span>
+
+          <span>
+            {coachReport.detectedBiases.length} biais détecté
+            {coachReport.detectedBiases.length > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="coach-report-grid">
+          {coachReport.observations.length > 0 && (
+            <section className="coach-report-section observations">
+              <span className="coach-report-section-title">
+                Observations
+              </span>
+
+              <div className="coach-report-items">
+                {coachReport.observations.map((item) => (
+                  <article key={item.id} className="coach-report-item">
+                    <div>
+                      <strong>{item.title}</strong>
+                      {item.metric && <small>{item.metric}</small>}
+                    </div>
+
+                    <p>{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {coachReport.strengths.length > 0 && (
+            <section className="coach-report-section strengths">
+              <span className="coach-report-section-title">
+                Points forts
+              </span>
+
+              <div className="coach-report-items">
+                {coachReport.strengths.map((item) => (
+                  <article key={item.id} className="coach-report-item">
+                    <div>
+                      <strong>{item.title}</strong>
+                      {item.metric && <small>{item.metric}</small>}
+                    </div>
+
+                    <p>{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {coachReport.weaknesses.length > 0 && (
+            <section className="coach-report-section weaknesses">
+              <span className="coach-report-section-title">
+                Axes d’amélioration
+              </span>
+
+              <div className="coach-report-items">
+                {coachReport.weaknesses.map((item) => (
+                  <article key={item.id} className="coach-report-item">
+                    <div>
+                      <strong>{item.title}</strong>
+                      {item.metric && <small>{item.metric}</small>}
+                    </div>
+
+                    <p>{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {coachReport.recommendations.length > 0 && (
+            <section className="coach-report-section recommendations">
+              <span className="coach-report-section-title">
+                Recommandations
+              </span>
+
+              <div className="coach-report-items">
+                {coachReport.recommendations.map((item) => (
+                  <article key={item.id} className="coach-report-item">
+                    <div>
+                      <strong>{item.title}</strong>
+                      {item.metric && <small>{item.metric}</small>}
+                    </div>
+
+                    <p>{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {coachReport.detectedBiases.length > 0 && (
+          <section className="coach-biases">
+            <div className="coach-biases-header">
+              <span>Biais détectés</span>
+              <small>
+                Analyse comportementale automatique
+              </small>
+            </div>
+
+            <div className="coach-biases-grid">
+              {coachReport.detectedBiases.map((item) => (
+                <article
+                  key={item.id}
+                  className={`coach-bias-card ${item.tone}`}
+                >
+                  <div className="coach-bias-icon" aria-hidden="true">
+                    !
+                  </div>
+
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {coachReport.observations.length === 0 &&
+          coachReport.strengths.length === 0 &&
+          coachReport.weaknesses.length === 0 &&
+          coachReport.recommendations.length === 0 &&
+          coachReport.detectedBiases.length === 0 && (
+            <div className="coach-report-empty">
+              <strong>Historique encore limité</strong>
+              <p>
+                Le coach commencera à produire un diagnostic détaillé
+                dès que davantage de paris clôturés seront disponibles.
+              </p>
+            </div>
+          )}
       </div>
 
       <div className="assistant-insights">
@@ -852,6 +1028,257 @@ export function BetAssistant({
           line-height: 1.45;
         }
 
+        .coach-report {
+          margin: 0 22px 20px;
+          padding: 20px;
+          border: 1px solid rgba(143, 162, 189, 0.14);
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.018);
+        }
+
+        .coach-report-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .coach-report-header h3 {
+          margin: 5px 0 0;
+          color: var(--text);
+          font-size: 16px;
+        }
+
+        .coach-report-status {
+          flex-shrink: 0;
+          padding: 7px 10px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .coach-report-status.reliable {
+          border: 1px solid rgba(73, 214, 165, 0.28);
+          background: rgba(73, 214, 165, 0.08);
+          color: var(--accent);
+        }
+
+        .coach-report-status.provisional {
+          border: 1px solid rgba(244, 178, 85, 0.25);
+          background: rgba(244, 178, 85, 0.07);
+          color: #f4b255;
+        }
+
+        .coach-report-summary {
+          margin: 14px 0 0;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.6;
+        }
+
+        .coach-report-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .coach-report-meta span {
+          padding: 6px 9px;
+          border: 1px solid rgba(143, 162, 189, 0.14);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.02);
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .coach-report-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .coach-report-section {
+          min-width: 0;
+          padding: 13px;
+          border: 1px solid rgba(143, 162, 189, 0.13);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.016);
+        }
+
+        .coach-report-section-title {
+          display: block;
+          margin-bottom: 10px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .coach-report-section.observations
+          .coach-report-section-title {
+          color: #91b9ff;
+        }
+
+        .coach-report-section.strengths
+          .coach-report-section-title {
+          color: var(--accent);
+        }
+
+        .coach-report-section.weaknesses
+          .coach-report-section-title {
+          color: #f4b255;
+        }
+
+        .coach-report-section.recommendations
+          .coach-report-section-title {
+          color: #b9a5ff;
+        }
+
+        .coach-report-items {
+          display: grid;
+          gap: 10px;
+        }
+
+        .coach-report-item {
+          padding-top: 10px;
+          border-top: 1px solid rgba(143, 162, 189, 0.1);
+        }
+
+        .coach-report-item:first-child {
+          padding-top: 0;
+          border-top: 0;
+        }
+
+        .coach-report-item > div {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .coach-report-item strong {
+          color: var(--text);
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        .coach-report-item small {
+          flex-shrink: 0;
+          color: var(--muted);
+          font-size: 9px;
+          font-weight: 800;
+        }
+
+        .coach-report-item p {
+          margin: 5px 0 0;
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.5;
+        }
+
+        .coach-biases {
+          margin-top: 14px;
+          padding-top: 14px;
+          border-top: 1px solid rgba(143, 162, 189, 0.12);
+        }
+
+        .coach-biases-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 10px;
+        }
+
+        .coach-biases-header span {
+          color: #f56c6c;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .coach-biases-header small {
+          color: var(--muted);
+          font-size: 9px;
+        }
+
+        .coach-biases-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .coach-bias-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 12px;
+          border: 1px solid rgba(244, 178, 85, 0.22);
+          border-radius: 13px;
+          background: rgba(244, 178, 85, 0.05);
+        }
+
+        .coach-bias-card.critical {
+          border-color: rgba(245, 108, 108, 0.28);
+          background: rgba(245, 108, 108, 0.06);
+        }
+
+        .coach-bias-icon {
+          display: grid;
+          place-items: center;
+          flex: 0 0 26px;
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
+          background: rgba(244, 178, 85, 0.12);
+          color: #f4b255;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .coach-bias-card.critical .coach-bias-icon {
+          background: rgba(245, 108, 108, 0.12);
+          color: #f56c6c;
+        }
+
+        .coach-bias-card strong {
+          color: var(--text);
+          font-size: 11px;
+        }
+
+        .coach-bias-card p {
+          margin: 5px 0 0;
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.5;
+        }
+
+        .coach-report-empty {
+          margin-top: 14px;
+          padding: 14px;
+          border: 1px dashed rgba(143, 162, 189, 0.18);
+          border-radius: 13px;
+          text-align: center;
+        }
+
+        .coach-report-empty strong {
+          color: var(--text);
+          font-size: 12px;
+        }
+
+        .coach-report-empty p {
+          margin: 5px 0 0;
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.5;
+        }
+
         .assistant-insights {
           margin: 0 22px 20px;
           padding-top: 20px;
@@ -1111,6 +1538,8 @@ export function BetAssistant({
         @media (max-width: 760px) {
           .decision-score-components,
           .decision-score-analysis,
+          .coach-report-grid,
+          .coach-biases-grid,
           .assistant-insights-grid {
             grid-template-columns: 1fr;
           }
@@ -1126,12 +1555,14 @@ export function BetAssistant({
 
         @media (max-width: 520px) {
           .decision-score,
+          .coach-report,
           .assistant-insights {
             margin-right: 17px;
             margin-left: 17px;
           }
 
-          .decision-score {
+          .decision-score,
+          .coach-report {
             padding: 16px;
           }
 
