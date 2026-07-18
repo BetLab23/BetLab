@@ -37,6 +37,7 @@ type ConversationMessage =
     }
   | {
       role: "assistant";
+      author?: "alfred" | "lara";
       content: string;
       title: string;
       highlights: string[];
@@ -209,6 +210,17 @@ function answerAtlasQuestion(question: string): AnalysisAnswer {
   };
 }
 
+function getAssistantAuthor(
+  copilotMode: CopilotMode,
+  atlasMode: boolean
+): "alfred" | "lara" {
+  if (atlasMode || copilotMode === "lara") {
+    return "lara";
+  }
+
+  return "alfred";
+}
+
 export function BetAssistant({
   bets,
   metrics,
@@ -299,6 +311,7 @@ export function BetAssistant({
         ...current,
         {
           role: "assistant",
+          author: "lara",
           title: "Mode Atlas terminé",
           content:
             "Retour à Lara en mode BetLab standard.",
@@ -319,6 +332,7 @@ export function BetAssistant({
           ...current,
           {
             role: "assistant",
+            author: "alfred",
             title: "Accès indisponible",
             content:
               "Le mode Atlas nécessite d’abord l’accès Batmobile.",
@@ -339,6 +353,7 @@ export function BetAssistant({
         ...current,
         {
           role: "assistant",
+          author: "lara",
           title: "Mode Atlas activé",
           content:
             "Bonjour Valentin. L’espace privé avec Lara est maintenant actif.",
@@ -362,6 +377,7 @@ export function BetAssistant({
         ...current,
         {
           role: "assistant",
+          author: "alfred",
           title: "Accès spécial refermé",
           content:
             "Retour au mode Alfred. Lara et le mode Duo sont désormais masqués.",
@@ -386,6 +402,7 @@ export function BetAssistant({
         ...current,
         {
           role: "assistant",
+          author: "alfred",
           title: "Accès copilotes déverrouillé",
           content:
             "Code reconnu. Lara et le mode Duo sont désormais disponibles.",
@@ -412,6 +429,10 @@ export function BetAssistant({
       },
       {
         role: "assistant",
+        author: getAssistantAuthor(
+          copilotMode,
+          atlasMode
+        ),
         title: result.title,
         content: result.answer,
         highlights: result.highlights,
@@ -977,39 +998,70 @@ export function BetAssistant({
       {messages.length > 0 && (
         <div className="assistant-conversation">
           {messages.slice(-8).map(
-            (message, index) => (
-              <div
-                key={`${message.role}-${index}`}
-                className={`assistant-conversation-message ${message.role}`}
-              >
-                <span className="assistant-message-author">
-                  {message.role === "assistant"
-                    ? "BetLab"
-                    : "Toi"}
-                </span>
+            (message, index) => {
+              const assistantAuthor =
+                message.role === "assistant"
+                  ? message.author ??
+                    getAssistantAuthor(
+                      copilotMode,
+                      atlasMode
+                    )
+                  : null;
 
-                {message.role === "assistant" && (
-                  <strong className="assistant-message-title">
-                    {message.title}
-                  </strong>
-                )}
-
-                <p>{message.content}</p>
-
-                {message.role === "assistant" &&
-                  message.highlights.length > 0 && (
-                    <div className="assistant-message-highlights">
-                      {message.highlights.map(
-                        (highlight) => (
-                          <small key={highlight}>
-                            {highlight}
-                          </small>
-                        )
-                      )}
-                    </div>
+              return (
+                <div
+                  key={`${message.role}-${index}`}
+                  className={`assistant-conversation-message ${message.role}`}
+                >
+                  {message.role === "assistant" && (
+                    <img
+                      className="assistant-message-avatar"
+                      src={
+                        assistantAuthor === "lara"
+                          ? "/lara-avatar.png"
+                          : "/alfred-avatar.png"
+                      }
+                      alt={
+                        assistantAuthor === "lara"
+                          ? "Lara"
+                          : "Alfred"
+                      }
+                    />
                   )}
-              </div>
-            )
+
+                  <div className="assistant-message-bubble">
+                    <span className="assistant-message-author">
+                      {message.role === "assistant"
+                        ? assistantAuthor === "lara"
+                          ? "Lara"
+                          : "Alfred"
+                        : "Toi"}
+                    </span>
+
+                    {message.role === "assistant" && (
+                      <strong className="assistant-message-title">
+                        {message.title}
+                      </strong>
+                    )}
+
+                    <p>{message.content}</p>
+
+                    {message.role === "assistant" &&
+                      message.highlights.length > 0 && (
+                        <div className="assistant-message-highlights">
+                          {message.highlights.map(
+                            (highlight) => (
+                              <small key={highlight}>
+                                {highlight}
+                              </small>
+                            )
+                          )}
+                        </div>
+                      )}
+                  </div>
+                </div>
+              );
+            }
           )}
         </div>
       )}
@@ -1862,6 +1914,37 @@ export function BetAssistant({
           color: var(--muted);
           font-size: 11px;
           line-height: 1.55;
+        }
+
+        .assistant-conversation-message {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .assistant-conversation-message.user {
+          justify-content: flex-end;
+        }
+
+        .assistant-message-avatar {
+          width: 40px;
+          height: 40px;
+          flex: 0 0 40px;
+          object-fit: cover;
+          object-position: center 24%;
+          border: 1px solid rgba(208, 174, 104, 0.3);
+          border-radius: 12px;
+          box-shadow: 0 7px 20px rgba(0, 0, 0, 0.22);
+        }
+
+        .assistant-message-bubble {
+          min-width: 0;
+          max-width: min(78%, 680px);
+        }
+
+        .assistant-conversation-message.user
+          .assistant-message-bubble {
+          margin-left: auto;
         }
 
         .assistant-conversation {
