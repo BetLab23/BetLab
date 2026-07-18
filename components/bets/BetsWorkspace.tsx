@@ -45,6 +45,22 @@ function statusLabel(status: Bet["status"]) {
   return status;
 }
 
+function confidenceStars(confidence: number | null) {
+  if (!confidence) return "☆☆☆☆☆";
+
+  return Array.from({ length: 5 }, (_, index) =>
+    index < confidence ? "★" : "☆"
+  ).join("");
+}
+
+function valueLabel(value: Bet["value_rating"]) {
+  if (value === "low") return "Value faible";
+  if (value === "medium") return "Value moyenne";
+  if (value === "high") return "Value forte";
+
+  return null;
+}
+
 function betReferenceDate(bet: Bet) {
   return new Date(bet.updated_at ?? bet.kickoff_at ?? bet.created_at);
 }
