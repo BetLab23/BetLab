@@ -287,3 +287,173 @@ button,input{font:inherit}.shell{display:grid;grid-template-columns:250px 1fr;mi
     align-items:flex-start;
   }
 }
+/* BetLab Core 0.5.2 — Segments & Assistant */
+
+.analytics-secondary-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  margin-top:16px;
+  align-items:start;
+}
+
+.analytics-table-wrap{
+  width:100%;
+  overflow-x:auto;
+}
+
+.analytics-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.analytics-table th{
+  padding:12px 10px;
+  border-bottom:1px solid var(--line);
+  color:var(--muted);
+  font-size:11px;
+  text-align:right;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.analytics-table th:first-child{
+  text-align:left;
+}
+
+.analytics-table td{
+  padding:15px 10px;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+  text-align:right;
+  white-space:nowrap;
+}
+
+.analytics-table td:first-child{
+  max-width:220px;
+  text-align:left;
+  white-space:normal;
+}
+
+.analytics-table tbody tr:last-child td{
+  border-bottom:0;
+}
+
+.analytics-empty-small{
+  min-height:140px;
+}
+
+.chart-area{
+  fill:url(#bankroll-area);
+}
+
+.analytics-assistant-card{
+  margin-top:16px;
+  position:relative;
+  overflow:hidden;
+}
+
+.analytics-assistant-card::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:4px;
+  height:100%;
+  background:#49d6a5;
+}
+
+.analytics-assistant-label{
+  display:inline-block;
+  margin-bottom:9px;
+  color:#49d6a5;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.analytics-reliability{
+  flex:0 0 auto;
+  min-width:180px;
+  padding:12px 14px;
+  border:1px solid rgba(73,214,165,.22);
+  border-radius:12px;
+  background:rgba(73,214,165,.05);
+}
+
+.analytics-reliability span,
+.analytics-reliability small{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.analytics-reliability strong{
+  display:block;
+  margin:4px 0;
+  color:#49d6a5;
+  font-size:17px;
+}
+
+.analytics-insights{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+.analytics-insight-item{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  min-height:96px;
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.015);
+}
+
+.analytics-insight-item > span{
+  flex:0 0 auto;
+  width:8px;
+  height:8px;
+  margin-top:6px;
+  border-radius:50%;
+  background:#49d6a5;
+  box-shadow:0 0 0 5px rgba(73,214,165,.08);
+}
+
+.analytics-insight-item strong{
+  display:block;
+  margin-bottom:6px;
+  font-size:13px;
+}
+
+.analytics-insight-item p{
+  margin:0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.55;
+}
+
+.analytics-insights-empty{
+  padding:30px;
+  color:var(--muted);
+  text-align:center;
+}
+
+@media(max-width:1100px){
+  .analytics-secondary-grid{
+    grid-template-columns:1fr;
+  }
+
+  .analytics-insights{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:700px){
+  .analytics-reliability{
+    width:100%;
+  }
+}
