@@ -228,10 +228,6 @@ export function BetAssistant({
       setMessages((current) => [
         ...current,
         {
-          role: "user",
-          content: cleanQuestion,
-        },
-        {
           role: "assistant",
           title: "Accès spécial refermé",
           content:
@@ -255,10 +251,6 @@ export function BetAssistant({
 
       setMessages((current) => [
         ...current,
-        {
-          role: "user",
-          content: cleanQuestion,
-        },
         {
           role: "assistant",
           title: "Accès copilotes déverrouillé",
