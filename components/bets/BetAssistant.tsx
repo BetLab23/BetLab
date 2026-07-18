@@ -1,8 +1,16 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { answerBetQuestion } from "@/lib/bets/analysis/engine";
-import type { AnalysisAnswer } from "@/lib/bets/analysis/types";
+import { FormEvent, useMemo, useState } from "react";
+import {
+  answerBetQuestion,
+  generateProactiveInsights,
+} from "@/lib/bets/analysis/engine";
+import type {
+  AnalysisAnswer,
+} from "@/lib/bets/analysis/types";
+import type {
+  ProactiveInsight,
+} from "@/lib/bets/analysis/engine";
 import type { Bet } from "@/lib/bets/types";
 
 type AssistantMetrics = {
@@ -109,6 +117,12 @@ function getAssistantAnalysis(metrics: AssistantMetrics) {
   };
 }
 
+function getInsightIcon(tone: ProactiveInsight["tone"]) {
+  if (tone === "positive") return "↗";
+  if (tone === "warning") return "!";
+  return "i";
+}
+
 export function BetAssistant({
   bets,
   metrics,
@@ -118,8 +132,15 @@ export function BetAssistant({
 }) {
   const analysis = getAssistantAnalysis(metrics);
 
+  const proactiveInsights = useMemo(
+    () => generateProactiveInsights(bets),
+    [bets]
+  );
+
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [messages, setMessages] = useState<
+    ConversationMessage[]
+  >([]);
 
   const pendingHighValueBets = bets.filter(
     (bet) =>
@@ -160,7 +181,9 @@ export function BetAssistant({
     setQuestion("");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
     askAssistant(question);
   }
@@ -169,7 +192,10 @@ export function BetAssistant({
     <section className="bet-assistant">
       <div className="bet-assistant-topbar">
         <div className="bet-assistant-identity">
-          <div className="bet-assistant-avatar" aria-hidden="true">
+          <div
+            className="bet-assistant-avatar"
+            aria-hidden="true"
+          >
             B
           </div>
 
@@ -224,12 +250,16 @@ export function BetAssistant({
 
             <div className="bet-assistant-signal">
               <span>ROI</span>
-              <strong>{metrics.roi.toFixed(1)} %</strong>
+              <strong>
+                {metrics.roi.toFixed(1)} %
+              </strong>
             </div>
 
             <div className="bet-assistant-signal">
               <span>Win rate</span>
-              <strong>{metrics.winRate.toFixed(1)} %</strong>
+              <strong>
+                {metrics.winRate.toFixed(1)} %
+              </strong>
             </div>
           </div>
 
@@ -239,12 +269,14 @@ export function BetAssistant({
             </span>
 
             <ul>
-              {analysis.recommendations.map((recommendation) => (
-                <li key={recommendation}>
-                  <span aria-hidden="true">✓</span>
-                  <p>{recommendation}</p>
-                </li>
-              ))}
+              {analysis.recommendations.map(
+                (recommendation) => (
+                  <li key={recommendation}>
+                    <span aria-hidden="true">✓</span>
+                    <p>{recommendation}</p>
+                  </li>
+                )
+              )}
             </ul>
           </div>
         </div>
@@ -260,12 +292,16 @@ export function BetAssistant({
               <span>Paris ouverts</span>
             </div>
 
-            <small>{euros(metrics.exposure)} engagés</small>
+            <small>
+              {euros(metrics.exposure)} engagés
+            </small>
           </div>
 
           <div className="bet-assistant-focus-item">
             <div>
-              <strong>{pendingHighValueBets.length}</strong>
+              <strong>
+                {pendingHighValueBets.length}
+              </strong>
               <span>Value forte</span>
             </div>
 
@@ -274,7 +310,9 @@ export function BetAssistant({
 
           <div className="bet-assistant-focus-item">
             <div>
-              <strong>{highConfidencePendingBets.length}</strong>
+              <strong>
+                {highConfidencePendingBets.length}
+              </strong>
               <span>Confiance élevée</span>
             </div>
 
@@ -295,39 +333,85 @@ export function BetAssistant({
         </aside>
       </div>
 
+      <div className="assistant-insights">
+        <div className="assistant-insights-header">
+          <div>
+            <span className="bet-assistant-section-label">
+              Insights BetLab
+            </span>
+
+            <h3>Signaux détectés automatiquement</h3>
+          </div>
+
+          <span className="assistant-insights-count">
+            {proactiveInsights.length} signal
+            {proactiveInsights.length > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="assistant-insights-grid">
+          {proactiveInsights.map((insight) => (
+            <article
+              key={insight.id}
+              className={`assistant-insight-card ${insight.tone}`}
+            >
+              <div
+                className="assistant-insight-icon"
+                aria-hidden="true"
+              >
+                {getInsightIcon(insight.tone)}
+              </div>
+
+              <div className="assistant-insight-content">
+                <div className="assistant-insight-heading">
+                  <strong>{insight.title}</strong>
+                  <small>{insight.metric}</small>
+                </div>
+
+                <p>{insight.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+
       {messages.length > 0 && (
         <div className="assistant-conversation">
-          {messages.slice(-8).map((message, index) => (
-            <div
-              key={`${message.role}-${index}`}
-              className={`assistant-conversation-message ${message.role}`}
-            >
-              <span className="assistant-message-author">
-                {message.role === "assistant"
-                  ? "BetLab"
-                  : "Toi"}
-              </span>
+          {messages.slice(-8).map(
+            (message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={`assistant-conversation-message ${message.role}`}
+              >
+                <span className="assistant-message-author">
+                  {message.role === "assistant"
+                    ? "BetLab"
+                    : "Toi"}
+                </span>
 
-              {message.role === "assistant" && (
-                <strong className="assistant-message-title">
-                  {message.title}
-                </strong>
-              )}
-
-              <p>{message.content}</p>
-
-              {message.role === "assistant" &&
-                message.highlights.length > 0 && (
-                  <div className="assistant-message-highlights">
-                    {message.highlights.map((highlight) => (
-                      <small key={highlight}>
-                        {highlight}
-                      </small>
-                    ))}
-                  </div>
+                {message.role === "assistant" && (
+                  <strong className="assistant-message-title">
+                    {message.title}
+                  </strong>
                 )}
-            </div>
-          ))}
+
+                <p>{message.content}</p>
+
+                {message.role === "assistant" &&
+                  message.highlights.length > 0 && (
+                    <div className="assistant-message-highlights">
+                      {message.highlights.map(
+                        (highlight) => (
+                          <small key={highlight}>
+                            {highlight}
+                          </small>
+                        )
+                      )}
+                    </div>
+                  )}
+              </div>
+            )
+          )}
         </div>
       )}
 
@@ -377,7 +461,9 @@ export function BetAssistant({
         <button
           type="button"
           onClick={() =>
-            askAssistant("Analyse mes plages de cotes")
+            askAssistant(
+              "Analyse mes plages de cotes"
+            )
           }
         >
           Cotes
@@ -386,7 +472,9 @@ export function BetAssistant({
         <button
           type="button"
           onClick={() =>
-            askAssistant("Quels tags performent le mieux ?")
+            askAssistant(
+              "Quels tags performent le mieux ?"
+            )
           }
         >
           Tags
@@ -417,12 +505,143 @@ export function BetAssistant({
       </form>
 
       <style jsx>{`
+        .assistant-insights {
+          margin: 0 22px 20px;
+          padding-top: 20px;
+          border-top: 1px solid
+            rgba(143, 162, 189, 0.14);
+        }
+
+        .assistant-insights-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 14px;
+        }
+
+        .assistant-insights-header h3 {
+          margin: 5px 0 0;
+          color: var(--text);
+          font-size: 15px;
+          line-height: 1.3;
+        }
+
+        .assistant-insights-count {
+          flex-shrink: 0;
+          padding: 6px 9px;
+          border: 1px solid
+            rgba(143, 162, 189, 0.16);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.02);
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .assistant-insights-grid {
+          display: grid;
+          grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .assistant-insight-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 11px;
+          min-width: 0;
+          padding: 13px;
+          border: 1px solid
+            rgba(143, 162, 189, 0.14);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.018);
+        }
+
+        .assistant-insight-card.positive {
+          border-color: rgba(73, 214, 165, 0.22);
+          background: rgba(73, 214, 165, 0.055);
+        }
+
+        .assistant-insight-card.warning {
+          border-color: rgba(244, 178, 85, 0.24);
+          background: rgba(244, 178, 85, 0.055);
+        }
+
+        .assistant-insight-card.neutral {
+          border-color: rgba(113, 167, 255, 0.2);
+          background: rgba(113, 167, 255, 0.045);
+        }
+
+        .assistant-insight-icon {
+          display: grid;
+          place-items: center;
+          flex: 0 0 28px;
+          width: 28px;
+          height: 28px;
+          border-radius: 9px;
+          color: var(--muted);
+          background: rgba(143, 162, 189, 0.1);
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .assistant-insight-card.positive
+          .assistant-insight-icon {
+          color: var(--accent);
+          background: rgba(73, 214, 165, 0.12);
+        }
+
+        .assistant-insight-card.warning
+          .assistant-insight-icon {
+          color: #f4b255;
+          background: rgba(244, 178, 85, 0.12);
+        }
+
+        .assistant-insight-card.neutral
+          .assistant-insight-icon {
+          color: #91b9ff;
+          background: rgba(113, 167, 255, 0.1);
+        }
+
+        .assistant-insight-content {
+          min-width: 0;
+        }
+
+        .assistant-insight-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .assistant-insight-heading strong {
+          color: var(--text);
+          font-size: 12px;
+          line-height: 1.35;
+        }
+
+        .assistant-insight-heading small {
+          flex-shrink: 0;
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .assistant-insight-content p {
+          margin: 6px 0 0;
+          color: var(--muted);
+          font-size: 11px;
+          line-height: 1.55;
+        }
+
         .assistant-conversation {
           display: grid;
           gap: 10px;
           margin: 0 22px 16px;
           padding-top: 18px;
-          border-top: 1px solid rgba(143, 162, 189, 0.14);
+          border-top: 1px solid
+            rgba(143, 162, 189, 0.14);
         }
 
         .assistant-conversation-message {
@@ -456,7 +675,8 @@ export function BetAssistant({
         .assistant-conversation-message.user {
           justify-self: end;
           background: rgba(113, 167, 255, 0.12);
-          border: 1px solid rgba(113, 167, 255, 0.25);
+          border: 1px solid
+            rgba(113, 167, 255, 0.25);
         }
 
         .assistant-conversation-message.user
@@ -467,7 +687,8 @@ export function BetAssistant({
         .assistant-conversation-message.assistant {
           justify-self: start;
           background: rgba(73, 214, 165, 0.08);
-          border: 1px solid rgba(73, 214, 165, 0.2);
+          border: 1px solid
+            rgba(73, 214, 165, 0.2);
         }
 
         .assistant-conversation-message.assistant
@@ -484,7 +705,8 @@ export function BetAssistant({
 
         .assistant-message-highlights small {
           padding: 5px 8px;
-          border: 1px solid rgba(73, 214, 165, 0.18);
+          border: 1px solid
+            rgba(73, 214, 165, 0.18);
           border-radius: 999px;
           background: rgba(73, 214, 165, 0.06);
           color: var(--muted);
@@ -523,7 +745,8 @@ export function BetAssistant({
           font-size: 13px;
         }
 
-        .bet-assistant-prompt.interactive input::placeholder {
+        .bet-assistant-prompt.interactive
+          input::placeholder {
           color: var(--muted);
         }
 
@@ -532,12 +755,33 @@ export function BetAssistant({
           opacity: 1;
         }
 
-        .bet-assistant-prompt.interactive button:disabled {
+        .bet-assistant-prompt.interactive
+          button:disabled {
           cursor: not-allowed;
           opacity: 0.45;
         }
 
+        @media (max-width: 760px) {
+          .assistant-insights-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
         @media (max-width: 520px) {
+          .assistant-insights {
+            margin-right: 17px;
+            margin-left: 17px;
+          }
+
+          .assistant-insights-header {
+            align-items: flex-start;
+          }
+
+          .assistant-insight-heading {
+            display: grid;
+            gap: 4px;
+          }
+
           .assistant-conversation {
             margin-right: 17px;
             margin-left: 17px;
