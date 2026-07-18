@@ -40,11 +40,95 @@ function isSettled(bet: Bet) {
   );
 }
 
+function oddsRange(odds: number) {
+  if (odds < 1.5) return "Moins de 1.50";
+  if (odds < 1.8) return "1.50 – 1.79";
+  if (odds < 2.2) return "1.80 – 2.19";
+  if (odds < 3) return "2.20 – 2.99";
+
+  return "3.00 et plus";
+}
+
+const ODDS_RANGE_ORDER = [
+  "Moins de 1.50",
+  "1.50 – 1.79",
+  "1.80 – 2.19",
+  "2.20 – 2.99",
+  "3.00 et plus",
+];
+
 type BankrollPoint = {
   label: string;
   bankroll: number;
   profit: number;
 };
+
+type PerformanceGroup = {
+  name: string;
+  bets: number;
+  stake: number;
+  profit: number;
+  roi: number;
+  wins: number;
+  losses: number;
+};
+
+type GroupAccumulator = {
+  bets: number;
+  stake: number;
+  profit: number;
+  wins: number;
+  losses: number;
+};
+
+function buildPerformanceGroups(
+  bets: Bet[],
+  getName: (bet: Bet) => string
+): PerformanceGroup[] {
+  const groups = new Map<
+    string,
+    GroupAccumulator
+  >();
+
+  bets.forEach((bet) => {
+    const name = getName(bet).trim() || "Non renseigné";
+
+    const current = groups.get(name) ?? {
+      bets: 0,
+      stake: 0,
+      profit: 0,
+      wins: 0,
+      losses: 0,
+    };
+
+    current.bets += 1;
+    current.stake += Number(bet.stake);
+    current.profit += Number(
+      bet.profit_loss ?? 0
+    );
+
+    if (bet.status === "win") {
+      current.wins += 1;
+    }
+
+    if (bet.status === "loss") {
+      current.losses += 1;
+    }
+
+    groups.set(name, current);
+  });
+
+  return Array.from(groups.entries()).map(
+    ([name, data]) => ({
+      name,
+      ...data,
+      roi:
+        data.stake > 0
+          ? (data.profit / data.stake) * 100
+          : 0,
+    })
+  );
+}
 
 export default function AnalyticsPage() {
   const [bets, setBets] = useState<Bet[]>([]);
@@ -81,6 +165,10 @@ export default function AnalyticsPage() {
 
     const wins = decisive.filter(
       (bet) => bet.status === "win"
+    );
+
+    const losses = decisive.filter(
+      (bet) => bet.status === "loss"
     );
 
     const totalProfit = settled.reduce(
@@ -128,51 +216,84 @@ export default function AnalyticsPage() {
         };
       });
 
-    const bookmakerMap = new Map<
-      string,
-      {
-        bets: number;
-        stake: number;
-        profit: number;
-      }
-    >();
+    const bookmakers = buildPerformanceGroups(
+      settled,
+      (bet) => bet.bookmaker || "Non renseigné"
+    ).sort((a, b) => b.profit - a.profit);
 
-    settled.forEach((bet) => {
-      const bookmaker =
-        bet.bookmaker?.trim() || "Non renseigné";
+    const markets = buildPerformanceGroups(
+      settled,
+      (bet) => bet.market || "Non renseigné"
+    ).sort((a, b) => b.profit - a.profit);
 
-      const current = bookmakerMap.get(
-        bookmaker
-      ) ?? {
-        bets: 0,
-        stake: 0,
-        profit: 0,
-      };
+    const oddsRanges = buildPerformanceGroups(
+      settled,
+      (bet) => oddsRange(Number(bet.odds))
+    ).sort(
+      (a, b) =>
+        ODDS_RANGE_ORDER.indexOf(a.name) -
+        ODDS_RANGE_ORDER.indexOf(b.name)
+    );
 
-      current.bets += 1;
-      current.stake += Number(bet.stake);
-      current.profit += Number(
-        bet.profit_loss ?? 0
-      );
+    const bestBookmaker =
+      bookmakers.length > 0
+        ? bookmakers[0]
+        : null;
 
-      bookmakerMap.set(bookmaker, current);
-    });
+    const worstBookmaker =
+      bookmakers.length > 0
+        ? [...bookmakers].sort(
+            (a, b) => a.profit - b.profit
+          )[0]
+        : null;
 
-    const bookmakers = Array.from(
-      bookmakerMap.entries()
-    )
-      .map(([name, data]) => ({
-        name,
-        ...data,
-        roi:
-          data.stake > 0
-            ? (data.profit / data.stake) * 100
-            : 0,
-      }))
-      .sort((a, b) => b.profit - a.profit);
+    const bestMarket =
+      markets.length > 0
+        ? markets[0]
+        : null;
+
+    const worstMarket =
+      markets.length > 0
+        ? [...markets].sort(
+            (a, b) => a.profit - b.profit
+          )[0]
+        : null;
+
+    const bestOddsRange =
+      oddsRanges.length > 0
+        ? [...oddsRanges].sort(
+            (a, b) => b.roi - a.roi
+          )[0]
+        : null;
+
+    let reliabilityLabel = "Insuffisant";
+    let reliabilityDetail =
+      "Moins de 10 paris clôturés.";
+
+    if (settled.length >= 100) {
+      reliabilityLabel = "Élevé";
+      reliabilityDetail =
+        "Plus de 100 paris clôturés.";
+    } else if (settled.length >= 50) {
+      reliabilityLabel = "Correct";
+      reliabilityDetail =
+        "Plus de 50 paris clôturés.";
+    } else if (settled.length >= 20) {
+      reliabilityLabel = "Modéré";
+      reliabilityDetail =
+        "Entre 20 et 49 paris clôturés.";
+    } else if (settled.length >= 10) {
+      reliabilityLabel = "Faible";
+      reliabilityDetail =
+        "Entre 10 et 19 paris clôturés.";
+    }
 
     return {
+      settled,
       settledCount: settled.length,
+      decisiveCount: decisive.length,
+      winsCount: wins.length,
+      lossesCount: losses.length,
       totalProfit,
       totalStaked,
       roi,
@@ -182,6 +303,15 @@ export default function AnalyticsPage() {
         INITIAL_BANKROLL + totalProfit,
       bankrollPoints,
       bookmakers,
+      markets,
+      oddsRanges,
+      bestBookmaker,
+      worstBookmaker,
+      bestMarket,
+      worstMarket,
+      bestOddsRange,
+      reliabilityLabel,
+      reliabilityDetail,
     };
   }, [bets]);
 
@@ -226,7 +356,7 @@ export default function AnalyticsPage() {
         <KpiCard
           label="Win rate"
           value={percent(analytics.winRate)}
-          detail="Paris gagnés parmi les paris décisifs"
+          detail={`${analytics.winsCount} gagné(s) · ${analytics.lossesCount} perdu(s)`}
         />
 
         <KpiCard
@@ -289,58 +419,333 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {loading ? (
-            <div className="analytics-empty">
-              Chargement…
-            </div>
-          ) : analytics.bookmakers.length ? (
-            <div className="bookmaker-list">
-              {analytics.bookmakers.map(
-                (bookmaker) => (
-                  <div
-                    className="bookmaker-row"
-                    key={bookmaker.name}
-                  >
-                    <div>
-                      <strong>
-                        {bookmaker.name}
-                      </strong>
-
-                      <small>
-                        {bookmaker.bets} pari(s) ·{" "}
-                        {euros(bookmaker.stake)} misés
-                      </small>
-                    </div>
-
-                    <div className="bookmaker-values">
-                      <strong
-                        className={
-                          bookmaker.profit >= 0
-                            ? "analytics-positive"
-                            : "analytics-negative"
-                        }
-                      >
-                        {signedEuros(
-                          bookmaker.profit
-                        )}
-                      </strong>
-
-                      <small>
-                        ROI {percent(bookmaker.roi)}
-                      </small>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          ) : (
-            <div className="analytics-empty">
-              Aucune donnée disponible.
-            </div>
-          )}
+          <PerformanceList
+            groups={analytics.bookmakers}
+            loading={loading}
+          />
         </article>
       </div>
+
+      <div className="analytics-secondary-grid">
+        <article className="card">
+          <div className="analytics-card-header">
+            <div>
+              <h2>Performance par marché</h2>
+              <p>
+                Identifier les types de paris les plus
+                rentables.
+              </p>
+            </div>
+          </div>
+
+          <PerformanceTable
+            groups={analytics.markets}
+            loading={loading}
+          />
+        </article>
+
+        <article className="card">
+          <div className="analytics-card-header">
+            <div>
+              <h2>Performance par cote</h2>
+              <p>
+                Mesurer le rendement selon la plage
+                de cotes.
+              </p>
+            </div>
+          </div>
+
+          <PerformanceTable
+            groups={analytics.oddsRanges}
+            loading={loading}
+          />
+        </article>
+      </div>
+
+      <article className="card analytics-assistant-card">
+        <div className="analytics-card-header">
+          <div>
+            <span className="analytics-assistant-label">
+              Analyse automatique
+            </span>
+
+            <h2>Assistant BetLab</h2>
+
+            <p>
+              Synthèse factuelle de tes performances
+              actuelles.
+            </p>
+          </div>
+
+          <div className="analytics-reliability">
+            <span>Fiabilité</span>
+            <strong>
+              {analytics.reliabilityLabel}
+            </strong>
+            <small>
+              {analytics.reliabilityDetail}
+            </small>
+          </div>
+        </div>
+
+        <AnalyticsInsights analytics={analytics} />
+      </article>
     </section>
+  );
+}
+
+function PerformanceList({
+  groups,
+  loading,
+}: {
+  groups: PerformanceGroup[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="analytics-empty">
+        Chargement…
+      </div>
+    );
+  }
+
+  if (!groups.length) {
+    return (
+      <div className="analytics-empty">
+        Aucune donnée disponible.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bookmaker-list">
+      {groups.map((group) => (
+        <div
+          className="bookmaker-row"
+          key={group.name}
+        >
+          <div>
+            <strong>{group.name}</strong>
+
+            <small>
+              {group.bets} pari(s) ·{" "}
+              {euros(group.stake)} misés
+            </small>
+          </div>
+
+          <div className="bookmaker-values">
+            <strong
+              className={
+                group.profit >= 0
+                  ? "analytics-positive"
+                  : "analytics-negative"
+              }
+            >
+              {signedEuros(group.profit)}
+            </strong>
+
+            <small>
+              ROI {percent(group.roi)}
+            </small>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PerformanceTable({
+  groups,
+  loading,
+}: {
+  groups: PerformanceGroup[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="analytics-empty analytics-empty-small">
+        Chargement…
+      </div>
+    );
+  }
+
+  if (!groups.length) {
+    return (
+      <div className="analytics-empty analytics-empty-small">
+        Aucune donnée disponible.
+      </div>
+    );
+  }
+
+  return (
+    <div className="analytics-table-wrap">
+      <table className="analytics-table">
+        <thead>
+          <tr>
+            <th>Segment</th>
+            <th>Paris</th>
+            <th>Mises</th>
+            <th>Profit</th>
+            <th>ROI</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {groups.map((group) => (
+            <tr key={group.name}>
+              <td>
+                <strong>{group.name}</strong>
+              </td>
+
+              <td>{group.bets}</td>
+
+              <td>{euros(group.stake)}</td>
+
+              <td
+                className={
+                  group.profit >= 0
+                    ? "analytics-positive"
+                    : "analytics-negative"
+                }
+              >
+                {signedEuros(group.profit)}
+              </td>
+
+              <td>{percent(group.roi)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AnalyticsInsights({
+  analytics,
+}: {
+  analytics: {
+    settledCount: number;
+    totalProfit: number;
+    roi: number;
+    winRate: number;
+    bestBookmaker: PerformanceGroup | null;
+    worstBookmaker: PerformanceGroup | null;
+    bestMarket: PerformanceGroup | null;
+    worstMarket: PerformanceGroup | null;
+    bestOddsRange: PerformanceGroup | null;
+  };
+}) {
+  if (analytics.settledCount === 0) {
+    return (
+      <div className="analytics-insights-empty">
+        Clôture plusieurs paris pour permettre à
+        BetLab de générer une première analyse.
+      </div>
+    );
+  }
+
+  return (
+    <div className="analytics-insights">
+      <Insight
+        title="Performance globale"
+        text={
+          analytics.totalProfit > 0
+            ? `Ta bankroll progresse de ${signedEuros(
+                analytics.totalProfit
+              )}, avec un ROI de ${percent(
+                analytics.roi
+              )}.`
+            : analytics.totalProfit < 0
+              ? `Ta bankroll recule de ${signedEuros(
+                  analytics.totalProfit
+                )}, avec un ROI de ${percent(
+                  analytics.roi
+                )}.`
+              : "Ta bankroll est actuellement à l’équilibre."
+        }
+      />
+
+      <Insight
+        title="Taux de réussite"
+        text={`Ton win rate actuel est de ${percent(
+          analytics.winRate
+        )}. Ce chiffre doit toujours être interprété avec les cotes moyennes et le ROI.`}
+      />
+
+      {analytics.bestBookmaker && (
+        <Insight
+          title="Bookmaker le plus performant"
+          text={`${analytics.bestBookmaker.name} affiche actuellement ${signedEuros(
+            analytics.bestBookmaker.profit
+          )} de résultat et un ROI de ${percent(
+            analytics.bestBookmaker.roi
+          )}.`}
+        />
+      )}
+
+      {analytics.worstBookmaker &&
+        analytics.worstBookmaker.profit < 0 && (
+          <Insight
+            title="Point de vigilance bookmaker"
+            text={`${analytics.worstBookmaker.name} présente actuellement un résultat de ${signedEuros(
+              analytics.worstBookmaker.profit
+            )}.`}
+          />
+        )}
+
+      {analytics.bestMarket && (
+        <Insight
+          title="Marché le plus performant"
+          text={`${analytics.bestMarket.name} est actuellement ton meilleur marché avec ${signedEuros(
+            analytics.bestMarket.profit
+          )} de résultat.`}
+        />
+      )}
+
+      {analytics.worstMarket &&
+        analytics.worstMarket.profit < 0 && (
+          <Insight
+            title="Marché à surveiller"
+            text={`${analytics.worstMarket.name} affiche actuellement ${signedEuros(
+              analytics.worstMarket.profit
+            )}. Vérifie la qualité des sélections avant d’augmenter les mises.`}
+          />
+        )}
+
+      {analytics.bestOddsRange && (
+        <Insight
+          title="Plage de cotes"
+          text={`La plage ${analytics.bestOddsRange.name} présente actuellement le meilleur ROI : ${percent(
+            analytics.bestOddsRange.roi
+          )}.`}
+        />
+      )}
+
+      {analytics.settledCount < 20 && (
+        <Insight
+          title="Prudence statistique"
+          text={`L’échantillon ne contient que ${analytics.settledCount} paris clôturés. Les tendances restent provisoires et ne doivent pas encore guider seules tes décisions.`}
+        />
+      )}
+    </div>
+  );
+}
+
+function Insight({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="analytics-insight-item">
+      <span />
+      <div>
+        <strong>{title}</strong>
+        <p>{text}</p>
+      </div>
+    </div>
   );
 }
 
@@ -384,6 +789,16 @@ function BankrollChart({
     .map((point) => `${point.x},${point.y}`)
     .join(" ");
 
+  const area =
+    `${paddingX},${height - paddingY} ` +
+    `${polyline} ` +
+    `${width - paddingX},${height - paddingY}`;
+
+  const referenceY =
+    paddingY +
+    ((maximum - INITIAL_BANKROLL) / range) *
+      (height - paddingY * 2);
+
   return (
     <div className="bankroll-chart">
       <div className="bankroll-scale">
@@ -396,6 +811,28 @@ function BankrollChart({
         role="img"
         aria-label="Évolution de la bankroll"
       >
+        <defs>
+          <linearGradient
+            id="bankroll-area"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop
+              offset="0%"
+              stopColor="#49d6a5"
+              stopOpacity="0.28"
+            />
+
+            <stop
+              offset="100%"
+              stopColor="#49d6a5"
+              stopOpacity="0"
+            />
+          </linearGradient>
+        </defs>
+
         <line
           x1={paddingX}
           y1={paddingY}
@@ -414,20 +851,15 @@ function BankrollChart({
 
         <line
           x1={paddingX}
-          y1={
-            paddingY +
-            ((maximum - INITIAL_BANKROLL) /
-              range) *
-              (height - paddingY * 2)
-          }
+          y1={referenceY}
           x2={width - paddingX}
-          y2={
-            paddingY +
-            ((maximum - INITIAL_BANKROLL) /
-              range) *
-              (height - paddingY * 2)
-          }
+          y2={referenceY}
           className="chart-reference"
+        />
+
+        <polygon
+          points={area}
+          className="chart-area"
         />
 
         <polyline
@@ -440,7 +872,11 @@ function BankrollChart({
             key={`${point.x}-${point.y}`}
             cx={point.x}
             cy={point.y}
-            r={index === chartPoints.length - 1 ? 6 : 4}
+            r={
+              index === chartPoints.length - 1
+                ? 6
+                : 4
+            }
             className="chart-point"
           />
         ))}
