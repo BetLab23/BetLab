@@ -450,6 +450,7 @@ const rules: InternalCoachRule[] = [
               "confidence-calibration-warning",
               "weakness",
               "warning",
+              "high",
               "Confiance maximale mal calibrée",
               "Tes paris notés 4★ ou 5★ performent moins bien que les niveaux intermédiaires. Ta conviction ne traduit pas encore suffisamment un avantage mesurable.",
               `Écart ROI : ${round(
@@ -594,6 +595,7 @@ const rules: InternalCoachRule[] = [
               "value-use-warning",
               "weakness",
               "warning",
+              "high",
               "La value forte est surestimée",
               "Les paris que tu identifies comme les meilleures opportunités restent nettement négatifs.",
               `ROI : ${round(high.roi)} %`,
