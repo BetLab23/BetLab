@@ -3,20 +3,27 @@
 import { useEffect, useState } from "react";
 
 type Status = "checking" | "connected" | "missing" | "error";
+type StatusPayload = {
+  status?: Status;
+  missing?: {
+    url?: boolean;
+    key?: boolean;
+  };
+};
 
 export function SupabaseStatus() {
-  const [status, setStatus] = useState<Status>("checking");
+  const [payload, setPayload] = useState<StatusPayload>({ status: "checking" });
 
   useEffect(() => {
     let active = true;
 
-    fetch("/api/supabase-status", { cache: "no-store" })
+    fetch(`/api/supabase-status?t=${Date.now()}`, { cache: "no-store" })
       .then(async (response) => {
-        const payload = (await response.json()) as { status?: Status };
-        if (active) setStatus(payload.status ?? "error");
+        const data = (await response.json()) as StatusPayload;
+        if (active) setPayload(data);
       })
       .catch(() => {
-        if (active) setStatus("error");
+        if (active) setPayload({ status: "error" });
       });
 
     return () => {
@@ -24,14 +31,30 @@ export function SupabaseStatus() {
     };
   }, []);
 
-  const content = {
-    checking: ["Vérification", "Connexion Supabase en cours"],
-    connected: ["Supabase connecté", "Infrastructure distante disponible"],
-    missing: ["Configuration incomplète", "Variables Supabase manquantes"],
-    error: ["Supabase indisponible", "Vérifier les clés ou le projet"],
-  } as const;
+  const status = payload.status ?? "error";
 
-  const [title, detail] = content[status];
+  let title = "Supabase indisponible";
+  let detail = "Vérifier les clés ou le projet";
+
+  if (status === "checking") {
+    title = "Vérification";
+    detail = "Connexion Supabase en cours";
+  } else if (status === "connected") {
+    title = "Supabase connecté";
+    detail = "Infrastructure distante disponible";
+  } else if (status === "missing") {
+    title = "Configuration incomplète";
+
+    if (payload.missing?.url && payload.missing?.key) {
+      detail = "URL et clé Supabase non détectées";
+    } else if (payload.missing?.url) {
+      detail = "URL Supabase non détectée";
+    } else if (payload.missing?.key) {
+      detail = "Clé Supabase non détectée";
+    } else {
+      detail = "Variables Supabase non détectées";
+    }
+  }
 
   return (
     <div className={`sync-card sync-${status}`} title={detail}>
