@@ -94,3 +94,42 @@ export type CrossAnalysisResult = {
   detectedFilters: string[];
   performance: CrossAnalysisPerformance;
 };
+
+export type DecisionScoreTone =
+  | "excellent"
+  | "good"
+  | "warning"
+  | "critical"
+  | "insufficient";
+
+export type DecisionScoreCategory =
+  | "stakeManagement"
+  | "confidence"
+  | "value"
+  | "diversification"
+  | "discipline"
+  | "performance";
+
+export type DecisionScoreComponent = {
+  id: DecisionScoreCategory;
+  label: string;
+  score: number;
+  maximumScore: number;
+  percentage: number;
+  tone: DecisionScoreTone;
+  summary: string;
+  evidence: string[];
+};
+
+export type DecisionScoreReport = {
+  score: number;
+  maximumScore: 100;
+  percentage: number;
+  tone: DecisionScoreTone;
+  label: string;
+  sampleSize: number;
+  isReliable: boolean;
+  components: DecisionScoreComponent[];
+  strengths: string[];
+  warnings: string[];
+};
