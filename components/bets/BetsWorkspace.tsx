@@ -416,38 +416,80 @@ function BetRows({
 
   return (
     <div className="recent-bets">
-      {bets.map((bet) => (
-        <button
-          type="button"
-          className="recent-bet"
-          key={bet.id}
-          onClick={() => onSelect(bet)}
-        >
-          <div>
-            <strong>
-              {bet.home_team} – {bet.away_team}
-            </strong>
+      {bets.map((bet) => {
+        const tags = bet.tags ?? [];
+        const betValueLabel = valueLabel(bet.value_rating);
 
-            <small>
-              {bet.market} · {bet.selection}
-            </small>
-          </div>
+        return (
+          <button
+            type="button"
+            className="recent-bet premium-bet-row"
+            key={bet.id}
+            onClick={() => onSelect(bet)}
+          >
+            <div className="premium-bet-main">
+              <div className="premium-bet-title">
+                <strong>
+                  {bet.home_team} – {bet.away_team}
+                </strong>
 
-          <div className="recent-bet-value">
-            <strong>{Number(bet.odds).toFixed(2)}</strong>
+                <span className={`bet-status ${bet.status}`}>
+                  {statusLabel(bet.status)}
+                </span>
+              </div>
 
-            <small>
-              {bet.profit_loss == null
-                ? euros(Number(bet.stake))
-                : signedEuros(Number(bet.profit_loss))}
-            </small>
-          </div>
-        </button>
-      ))}
+              <small>
+                {bet.market} · {bet.selection}
+              </small>
+
+              <div className="bet-decision-meta">
+                <span
+                  className="bet-confidence"
+                  aria-label={`Confiance ${bet.confidence ?? 0} sur 5`}
+                >
+                  {confidenceStars(bet.confidence)}
+                </span>
+
+                {betValueLabel && (
+                  <span
+                    className={`value-badge ${bet.value_rating ?? ""}`}
+                  >
+                    {betValueLabel}
+                  </span>
+                )}
+
+                {tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="bet-tag"
+                  >
+                    {tag}
+                  </span>
+                ))}
+
+                {tags.length > 3 && (
+                  <span className="bet-tag">
+                    +{tags.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="recent-bet-value">
+              <strong>{Number(bet.odds).toFixed(2)}</strong>
+
+              <small>
+                {bet.profit_loss == null
+                  ? euros(Number(bet.stake))
+                  : signedEuros(Number(bet.profit_loss))}
+              </small>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
-
 function BetsTable({
   bets,
   loading,
@@ -464,6 +506,7 @@ function BetsTable({
           <th>Date</th>
           <th>Match</th>
           <th>Marché</th>
+          <th>Décision</th>
           <th>Bookmaker</th>
           <th>Cote</th>
           <th>Mise</th>
@@ -475,65 +518,104 @@ function BetsTable({
       <tbody>
         {loading ? (
           <tr>
-            <td colSpan={8} className="empty-cell">
+            <td colSpan={9} className="empty-cell">
               Chargement…
             </td>
           </tr>
         ) : bets.length ? (
-          bets.map((bet) => (
-            <tr
-              key={bet.id}
-              className="clickable-row"
-              onClick={() => onSelect(bet)}
-            >
-              <td>
-                {formatDate(
-                  bet.kickoff_at ?? bet.created_at
-                )}
-              </td>
+          bets.map((bet) => {
+            const tags = bet.tags ?? [];
+            const betValueLabel = valueLabel(bet.value_rating);
 
-              <td>
-                {bet.home_team} – {bet.away_team}
-              </td>
+            return (
+              <tr
+                key={bet.id}
+                className="clickable-row"
+                onClick={() => onSelect(bet)}
+              >
+                <td>
+                  {formatDate(
+                    bet.kickoff_at ?? bet.created_at
+                  )}
+                </td>
 
-              <td>
-                {bet.market}
+                <td>
+                  <strong className="table-match">
+                    {bet.home_team} – {bet.away_team}
+                  </strong>
 
-                <small className="table-subtitle">
-                  {bet.selection}
-                </small>
-              </td>
+                  <small className="table-subtitle">
+                    {bet.competition}
+                  </small>
+                </td>
 
-              <td>{bet.bookmaker}</td>
+                <td>
+                  {bet.market}
 
-              <td>
-                {Number(bet.odds).toFixed(2)}
-              </td>
+                  <small className="table-subtitle">
+                    {bet.selection}
+                  </small>
+                </td>
 
-              <td>
-                {euros(Number(bet.stake))}
-              </td>
+                <td>
+                  <div className="table-decision">
+                    <span
+                      className="bet-confidence table-stars"
+                      aria-label={`Confiance ${bet.confidence ?? 0} sur 5`}
+                    >
+                      {confidenceStars(bet.confidence)}
+                    </span>
 
-              <td>
-                <span
-                  className={`bet-status ${bet.status}`}
-                >
-                  {statusLabel(bet.status)}
-                </span>
-              </td>
-
-              <td>
-                {bet.profit_loss == null
-                  ? "—"
-                  : signedEuros(
-                      Number(bet.profit_loss)
+                    {betValueLabel && (
+                      <span
+                        className={`value-badge ${bet.value_rating ?? ""}`}
+                      >
+                        {betValueLabel}
+                      </span>
                     )}
-              </td>
-            </tr>
-          ))
+
+                    {tags.length > 0 && (
+                      <small className="table-subtitle decision-tags">
+                        {tags.slice(0, 3).join(" · ")}
+                        {tags.length > 3
+                          ? ` · +${tags.length - 3}`
+                          : ""}
+                      </small>
+                    )}
+                  </div>
+                </td>
+
+                <td>{bet.bookmaker}</td>
+
+                <td>
+                  {Number(bet.odds).toFixed(2)}
+                </td>
+
+                <td>
+                  {euros(Number(bet.stake))}
+                </td>
+
+                <td>
+                  <span
+                    className={`bet-status ${bet.status}`}
+                  >
+                    {statusLabel(bet.status)}
+                  </span>
+                </td>
+
+                <td>
+                  {bet.profit_loss == null
+                    ? "—"
+                    : signedEuros(
+                        Number(bet.profit_loss)
+                      )}
+                </td>
+              </tr>
+            );
+          })
         ) : (
           <tr>
-            <td colSpan={8} className="empty-cell">
+            <td colSpan={9} className="empty-cell">
               Aucun pari enregistré.
             </td>
           </tr>
