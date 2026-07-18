@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { answerBetQuestion } from "@/lib/bets/analysis/engine";
+import type { AnalysisAnswer } from "@/lib/bets/analysis/types";
 import type { Bet } from "@/lib/bets/types";
 
 type AssistantMetrics = {
@@ -14,10 +16,17 @@ type AssistantMetrics = {
   profit30Days: number;
 };
 
-type ConversationMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
+type ConversationMessage =
+  | {
+      role: "user";
+      content: string;
+    }
+  | {
+      role: "assistant";
+      content: string;
+      title: string;
+      highlights: string[];
+    };
 
 function euros(value: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -33,14 +42,6 @@ function signedEuros(value: number) {
   if (value < 0) return `-${formatted}`;
 
   return formatted;
-}
-
-function normalizeText(value: string) {
-  return value
-    .toLocaleLowerCase("fr-FR")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
 }
 
 function getAssistantAnalysis(metrics: AssistantMetrics) {
@@ -88,10 +89,10 @@ function getAssistantAnalysis(metrics: AssistantMetrics) {
       greeting: "Bonjour Valentin.",
       title: "Ta bankroll traverse une phase de recul.",
       summary:
-        "Avant d’augmenter ton exposition, il faut identifier les marchés, les tags et les niveaux de confiance associés aux pertes.",
+        "Le moteur peut maintenant rechercher les compétitions, marchés, bookmakers, cotes, tags et niveaux de confiance associés aux pertes.",
       recommendations: [
         "Conserve ou réduis temporairement le niveau des mises.",
-        "Analyse les décisions perdantes avant de chercher à te refaire.",
+        "Demande-moi pourquoi tu perds afin d’identifier les segments à surveiller.",
       ],
     };
   }
@@ -100,158 +101,12 @@ function getAssistantAnalysis(metrics: AssistantMetrics) {
     greeting: "Bonjour Valentin.",
     title: "Ta bankroll est actuellement à l’équilibre.",
     summary:
-      "Les résultats ne dégagent pas encore de tendance nette. Le prochain objectif est d’identifier les décisions qui créent réellement de la value.",
+      "Les résultats ne dégagent pas encore de tendance nette. Le moteur peut néanmoins comparer tes différents segments de performance.",
     recommendations: [
       "Continue à documenter chaque décision.",
-      "Attends davantage de volume avant de tirer une conclusion.",
+      "Compare les compétitions, les bookmakers et les niveaux de confiance.",
     ],
   };
-}
-
-function buildAssistantAnswer(
-  question: string,
-  bets: Bet[],
-  metrics: AssistantMetrics
-) {
-  const normalizedQuestion = normalizeText(question);
-
-  const pendingBets = bets.filter(
-    (bet) => bet.status === "pending"
-  );
-
-  const highValuePendingBets = pendingBets.filter(
-    (bet) => bet.value_rating === "high"
-  );
-
-  const highConfidencePendingBets = pendingBets.filter(
-    (bet) => Number(bet.confidence ?? 0) >= 4
-  );
-
-  if (
-    normalizedQuestion.includes("roi") ||
-    normalizedQuestion.includes("rendement")
-  ) {
-    if (metrics.settledCount === 0) {
-      return "Ton ROI est actuellement de 0 %, car aucun pari n’a encore été clôturé.";
-    }
-
-    return `Ton ROI est de ${metrics.roi.toFixed(
-      1
-    )} %. Il est calculé à partir de ${metrics.settledCount} pari(s) clôturé(s). ${
-      metrics.roi > 0
-        ? "Le rendement est positif, mais il faudra davantage de volume pour juger sa solidité."
-        : metrics.roi < 0
-          ? "Le rendement est négatif. Il faut analyser les segments qui concentrent les pertes."
-          : "Le rendement est actuellement neutre."
-    }`;
-  }
-
-  if (
-    normalizedQuestion.includes("bankroll") ||
-    normalizedQuestion.includes("capital")
-  ) {
-    return `Ta bankroll actuelle est de ${euros(
-      metrics.bankroll
-    )}. Ton résultat cumulé est de ${signedEuros(metrics.profit)}. ${
-      metrics.profit > 0
-        ? "Elle progresse par rapport au capital initial."
-        : metrics.profit < 0
-          ? "Elle est actuellement en retrait par rapport au capital initial."
-          : "Elle est au même niveau que le capital initial."
-    }`;
-  }
-
-  if (
-    normalizedQuestion.includes("profit") ||
-    normalizedQuestion.includes("perte") ||
-    normalizedQuestion.includes("gagne") ||
-    normalizedQuestion.includes("resultat")
-  ) {
-    return `Ton résultat global est de ${signedEuros(
-      metrics.profit
-    )}. Sur les 30 derniers jours, ton résultat est de ${signedEuros(
-      metrics.profit30Days
-    )}.`;
-  }
-
-  if (
-    normalizedQuestion.includes("ouvert") ||
-    normalizedQuestion.includes("exposition") ||
-    normalizedQuestion.includes("engage")
-  ) {
-    return `Tu as ${metrics.pendingCount} pari(s) ouvert(s), avec une exposition totale de ${euros(
-      metrics.exposure
-    )}. ${
-      metrics.pendingCount > 0
-        ? "Cette somme reste exposée jusqu’à la clôture des paris."
-        : "Aucun capital n’est actuellement engagé."
-    }`;
-  }
-
-  if (
-    normalizedQuestion.includes("value") ||
-    normalizedQuestion.includes("valeur")
-  ) {
-    if (highValuePendingBets.length === 0) {
-      return "Aucun de tes paris ouverts n’est actuellement classé en value forte.";
-    }
-
-    const exposure = highValuePendingBets.reduce(
-      (sum, bet) => sum + Number(bet.stake),
-      0
-    );
-
-    return `Tu as ${highValuePendingBets.length} pari(s) ouvert(s) classé(s) en value forte, pour une mise totale de ${euros(
-      exposure
-    )}. Attention : une value forte ne garantit pas que le pari sera gagnant.`;
-  }
-
-  if (
-    normalizedQuestion.includes("confiance") ||
-    normalizedQuestion.includes("etoile")
-  ) {
-    return `${highConfidencePendingBets.length} de tes paris ouverts ont une confiance de 4 ou 5 étoiles. ${
-      highConfidencePendingBets.length > 0
-        ? "Il faudra comparer leurs résultats futurs avec ceux des paris moins bien notés."
-        : "Aucun pari ouvert n’a actuellement une confiance élevée."
-    }`;
-  }
-
-  if (
-    normalizedQuestion.includes("win rate") ||
-    normalizedQuestion.includes("taux de victoire") ||
-    normalizedQuestion.includes("pourcentage de victoire")
-  ) {
-    return `Ton win rate est de ${metrics.winRate.toFixed(
-      1
-    )} %. Cet indicateur doit être interprété avec les cotes moyennes : un taux de victoire élevé n’est pas forcément rentable, et inversement.`;
-  }
-
-  if (
-    normalizedQuestion.includes("conseil") ||
-    normalizedQuestion.includes("recommande") ||
-    normalizedQuestion.includes("faire")
-  ) {
-    if (metrics.settledCount < 20) {
-      return "Ma recommandation principale est de continuer à enregistrer précisément tes paris sans augmenter brutalement les mises. Ton historique est encore trop limité pour conclure avec une forte fiabilité.";
-    }
-
-    if (metrics.profit < 0) {
-      return "Je te recommande de stabiliser ou réduire les mises, puis d’identifier les marchés, tags et niveaux de confiance qui concentrent les pertes.";
-    }
-
-    return "Je te recommande de conserver une taille de mise disciplinée et de vérifier que tes résultats positifs se répètent sur un volume plus important.";
-  }
-
-  if (
-    normalizedQuestion.includes("bonjour") ||
-    normalizedQuestion.includes("salut") ||
-    normalizedQuestion.includes("ca va")
-  ) {
-    return `Bonjour Valentin. J’ai actuellement ${bets.length} pari(s) dans ton historique et je suis prête à analyser tes principaux indicateurs.`;
-  }
-
-  return "Je peux actuellement répondre sur ta bankroll, ton ROI, ton résultat, ton exposition, tes paris ouverts, leur niveau de confiance et leur value. Le moteur IA complet sera connecté dans une prochaine version.";
 }
 
 export function BetAssistant({
@@ -283,10 +138,9 @@ export function BetAssistant({
 
     if (!cleanQuestion) return;
 
-    const answer = buildAssistantAnswer(
+    const result: AnalysisAnswer = answerBetQuestion(
       cleanQuestion,
-      bets,
-      metrics
+      bets
     );
 
     setMessages((current) => [
@@ -297,7 +151,9 @@ export function BetAssistant({
       },
       {
         role: "assistant",
-        content: answer,
+        title: result.title,
+        content: result.answer,
+        highlights: result.highlights,
       },
     ]);
 
@@ -328,7 +184,7 @@ export function BetAssistant({
 
         <div className="bet-assistant-online">
           <span />
-          Interactive
+          Moteur actif
         </div>
       </div>
 
@@ -441,18 +297,35 @@ export function BetAssistant({
 
       {messages.length > 0 && (
         <div className="assistant-conversation">
-          {messages.slice(-6).map((message, index) => (
+          {messages.slice(-8).map((message, index) => (
             <div
               key={`${message.role}-${index}`}
               className={`assistant-conversation-message ${message.role}`}
             >
-              <span>
+              <span className="assistant-message-author">
                 {message.role === "assistant"
                   ? "BetLab"
                   : "Toi"}
               </span>
 
+              {message.role === "assistant" && (
+                <strong className="assistant-message-title">
+                  {message.title}
+                </strong>
+              )}
+
               <p>{message.content}</p>
+
+              {message.role === "assistant" &&
+                message.highlights.length > 0 && (
+                  <div className="assistant-message-highlights">
+                    {message.highlights.map((highlight) => (
+                      <small key={highlight}>
+                        {highlight}
+                      </small>
+                    ))}
+                  </div>
+                )}
             </div>
           ))}
         </div>
@@ -462,37 +335,61 @@ export function BetAssistant({
         <button
           type="button"
           onClick={() =>
-            askAssistant("Quel est mon ROI ?")
+            askAssistant("Pourquoi je perds ?")
           }
         >
-          Mon ROI
+          Pourquoi je perds ?
         </button>
 
         <button
           type="button"
           onClick={() =>
-            askAssistant("Quelle est mon exposition ?")
+            askAssistant(
+              "Quel bookmaker est le plus performant ?"
+            )
           }
         >
-          Mon exposition
+          Bookmakers
         </button>
 
         <button
           type="button"
           onClick={() =>
-            askAssistant("Analyse mes paris à forte value")
+            askAssistant(
+              "Quelle compétition fonctionne le mieux ?"
+            )
           }
         >
-          Value forte
+          Compétitions
         </button>
 
         <button
           type="button"
           onClick={() =>
-            askAssistant("Que me recommandes-tu ?")
+            askAssistant(
+              "Analyse mes niveaux de confiance"
+            )
           }
         >
-          Recommandation
+          Confiance
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            askAssistant("Analyse mes plages de cotes")
+          }
+        >
+          Cotes
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            askAssistant("Quels tags performent le mieux ?")
+          }
+        >
+          Tags
         </button>
       </div>
 
@@ -503,8 +400,10 @@ export function BetAssistant({
         <input
           type="text"
           value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          placeholder="Ex. Quel est mon ROI ?"
+          onChange={(event) =>
+            setQuestion(event.target.value)
+          }
+          placeholder="Ex. Pourquoi je perds ?"
           aria-label="Question pour l’assistante BetLab"
         />
 
@@ -532,13 +431,20 @@ export function BetAssistant({
           border-radius: 13px;
         }
 
-        .assistant-conversation-message span {
+        .assistant-message-author {
           display: block;
           margin-bottom: 5px;
           font-size: 10px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
+        }
+
+        .assistant-message-title {
+          display: block;
+          margin-bottom: 6px;
+          color: var(--text);
+          font-size: 13px;
         }
 
         .assistant-conversation-message p {
@@ -553,7 +459,8 @@ export function BetAssistant({
           border: 1px solid rgba(113, 167, 255, 0.25);
         }
 
-        .assistant-conversation-message.user span {
+        .assistant-conversation-message.user
+          .assistant-message-author {
           color: #91b9ff;
         }
 
@@ -563,8 +470,25 @@ export function BetAssistant({
           border: 1px solid rgba(73, 214, 165, 0.2);
         }
 
-        .assistant-conversation-message.assistant span {
+        .assistant-conversation-message.assistant
+          .assistant-message-author {
           color: var(--accent);
+        }
+
+        .assistant-message-highlights {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 10px;
+        }
+
+        .assistant-message-highlights small {
+          padding: 5px 8px;
+          border: 1px solid rgba(73, 214, 165, 0.18);
+          border-radius: 999px;
+          background: rgba(73, 214, 165, 0.06);
+          color: var(--muted);
+          font-size: 10px;
         }
 
         .assistant-suggestions {
