@@ -176,6 +176,7 @@ export function BetAssistant({
     useState<CopilotMode>("alfred");
   const [personasUnlocked, setPersonasUnlocked] =
     useState(false);
+  const [atlasMode, setAtlasMode] = useState(false);
 
   const copilotIdentity =
     copilotMode === "alfred"
@@ -187,9 +188,13 @@ export function BetAssistant({
         }
       : copilotMode === "lara"
         ? {
-            name: "Lara",
-            eyebrow: "Copilote BetLab",
-            subtitle: "Chaleureuse, intuitive et directe",
+            name: atlasMode ? "Lara — Mode Atlas" : "Lara",
+            eyebrow: atlasMode
+              ? "Espace privé"
+              : "Copilote BetLab",
+            subtitle: atlasMode
+              ? "Conversation privée avec Lara"
+              : "Chaleureuse, intuitive et directe",
             image: "/lara-avatar.png",
           }
         : {
@@ -221,7 +226,70 @@ export function BetAssistant({
       .replace(/[.!?]+$/g, "")
       .trim();
 
+    if (normalizedCommand === "fin atlas") {
+      setAtlasMode(false);
+      setCopilotMode("lara");
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          title: "Mode Atlas terminé",
+          content:
+            "Retour à Lara en mode BetLab standard.",
+          highlights: [
+            "Lara",
+            "Mode standard",
+          ],
+        },
+      ]);
+
+      setQuestion("");
+      return;
+    }
+
+    if (normalizedCommand === "mode atlas") {
+      if (!personasUnlocked) {
+        setMessages((current) => [
+          ...current,
+          {
+            role: "assistant",
+            title: "Accès indisponible",
+            content:
+              "Le mode Atlas nécessite d’abord l’accès Batmobile.",
+            highlights: [
+              "Commande requise : Batmobile",
+            ],
+          },
+        ]);
+
+        setQuestion("");
+        return;
+      }
+
+      setCopilotMode("lara");
+      setAtlasMode(true);
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          title: "Mode Atlas activé",
+          content:
+            "Bonjour Valentin. L’espace privé avec Lara est maintenant actif.",
+          highlights: [
+            "Lara",
+            "Espace privé",
+          ],
+        },
+      ]);
+
+      setQuestion("");
+      return;
+    }
+
     if (normalizedCommand === "fin batmobile") {
+      setAtlasMode(false);
       setPersonasUnlocked(false);
       setCopilotMode("alfred");
 
@@ -297,7 +365,11 @@ export function BetAssistant({
   }
 
   return (
-    <section className="bet-assistant">
+    <section
+      className={`bet-assistant ${
+        atlasMode ? "bet-assistant-atlas" : ""
+      }`}
+    >
       <div className="bet-assistant-topbar">
         <div className="bet-assistant-identity">
           {copilotMode === "duo" ? (
@@ -347,7 +419,10 @@ export function BetAssistant({
                 className={
                   copilotMode === "alfred" ? "active" : ""
                 }
-                onClick={() => setCopilotMode("alfred")}
+                onClick={() => {
+                  setAtlasMode(false);
+                  setCopilotMode("alfred");
+                }}
               >
                 <img
                   src="/alfred-avatar.png"
@@ -362,7 +437,10 @@ export function BetAssistant({
                 className={
                   copilotMode === "lara" ? "active" : ""
                 }
-                onClick={() => setCopilotMode("lara")}
+                onClick={() => {
+                  setAtlasMode(false);
+                  setCopilotMode("lara");
+                }}
               >
                 <img
                   src="/lara-avatar.png"
@@ -377,10 +455,19 @@ export function BetAssistant({
                 className={
                   copilotMode === "duo" ? "active" : ""
                 }
-                onClick={() => setCopilotMode("duo")}
+                onClick={() => {
+                  setAtlasMode(false);
+                  setCopilotMode("duo");
+                }}
               >
                 Duo
               </button>
+            </div>
+          )}
+
+          {atlasMode && (
+            <div className="atlas-mode-badge">
+              ATLAS
             </div>
           )}
 
@@ -397,7 +484,9 @@ export function BetAssistant({
             {copilotMode === "alfred"
               ? "Alfred à ton service."
               : copilotMode === "lara"
-                ? "Lara est avec toi."
+                ? atlasMode
+                  ? "Nous sommes entre nous."
+                  : "Lara est avec toi."
                 : analysis.greeting}
           </p>
 
@@ -951,6 +1040,34 @@ export function BetAssistant({
       </form>
 
       <style jsx>{`
+        .bet-assistant-atlas {
+          border-color: rgba(208, 174, 104, 0.28);
+          background:
+            radial-gradient(
+              circle at 18% 0%,
+              rgba(208, 174, 104, 0.08),
+              transparent 34%
+            ),
+            var(--panel);
+          box-shadow:
+            0 18px 50px rgba(0, 0, 0, 0.24),
+            inset 0 0 0 1px rgba(208, 174, 104, 0.04);
+        }
+
+        .atlas-mode-badge {
+          display: inline-flex;
+          align-items: center;
+          min-height: 28px;
+          padding: 0 10px;
+          border: 1px solid rgba(208, 174, 104, 0.28);
+          border-radius: 999px;
+          background: rgba(208, 174, 104, 0.09);
+          color: #e5c680;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: 0.16em;
+        }
+
         .bet-assistant-topbar {
           display: flex;
           align-items: center;
