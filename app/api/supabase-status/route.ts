@@ -15,62 +15,42 @@ function readSupabaseConfig() {
     process.env.SUPABASE_ANON_KEY?.trim() ||
     "";
 
-  return { url, key };
+  return { url: url.replace(/\/$/, ""), key };
+}
+
+function json(body: unknown) {
+  return NextResponse.json(body, {
+    status: 200,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
 }
 
 export async function GET() {
   const { url, key } = readSupabaseConfig();
 
   if (!url || !key) {
-    return NextResponse.json(
-      {
-        status: "missing",
-        missing: {
-          url: !url,
-          key: !key,
-        },
-      },
-      {
-        status: 200,
-        headers: { "Cache-Control": "no-store, max-age=0" },
-      },
-    );
+    return json({
+      status: "missing",
+      missing: { url: !url, key: !key },
+    });
   }
 
   try {
-    const response = await fetch(`${url.replace(/\/$/, "")}/rest/v1/`, {
+    // GoTrue exposes a dedicated health endpoint. Unlike /rest/v1/, this
+    // endpoint does not depend on any database table, schema or RLS policy.
+    const response = await fetch(`${url}/auth/v1/health`, {
       method: "GET",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-      },
+      headers: { apikey: key },
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!response.ok) {
-      return NextResponse.json(
-        { status: "error", code: response.status },
-        {
-          status: 200,
-          headers: { "Cache-Control": "no-store, max-age=0" },
-        },
-      );
+      return json({ status: "error", code: response.status });
     }
 
-    return NextResponse.json(
-      { status: "connected" },
-      {
-        status: 200,
-        headers: { "Cache-Control": "no-store, max-age=0" },
-      },
-    );
+    return json({ status: "connected" });
   } catch {
-    return NextResponse.json(
-      { status: "error" },
-      {
-        status: 200,
-        headers: { "Cache-Control": "no-store, max-age=0" },
-      },
-    );
+    return json({ status: "error" });
   }
 }
