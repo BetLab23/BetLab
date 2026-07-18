@@ -1,4 +1,14 @@
-export type BetStatus = "pending" | "win" | "loss" | "void" | "cashout";
+export type BetStatus =
+  | "pending"
+  | "win"
+  | "loss"
+  | "void"
+  | "cashout";
+
+export type ValueRating =
+  | "low"
+  | "medium"
+  | "high";
 
 export type Bet = {
   id: string;
@@ -13,7 +23,12 @@ export type Bet = {
   bookmaker: string;
   odds: number;
   stake: number;
+
   confidence: number | null;
+  value_rating: ValueRating | null;
+  tags: string[];
+  analysis: string | null;
+
   status: BetStatus;
   profit_loss: number | null;
   notes: string | null;
@@ -32,7 +47,12 @@ export type NewBetInput = {
   bookmaker: string;
   odds: number;
   stake: number;
+
   confidence: number | null;
+  value_rating?: ValueRating | null;
+  tags?: string[];
+  analysis?: string | null;
+
   notes: string | null;
 };
 
@@ -45,4 +65,8 @@ export type UpdateBetInput = {
   notes: string | null;
   status: BetStatus;
   profit_loss: number | null;
+
+  value_rating?: ValueRating | null;
+  tags?: string[];
+  analysis?: string | null;
 };
