@@ -1,45 +1,24 @@
-# BetLab — Phase 1 V0.1
+# BetLab Core 0.2
 
-Fondation de la vraie application BetLab :
-- Next.js App Router + TypeScript ;
-- interface responsive Windows / iPhone ;
-- navigation fonctionnelle ;
-- manifest PWA ;
-- structure Supabase SSR ;
-- schéma SQL sécurisé avec Row Level Security ;
-- projet prêt à déployer sur Vercel.
+Version prête pour GitHub et Vercel.
 
-## Lancer sur Windows
+## Nouveauté principale
 
-1. Installer Node.js LTS.
-2. Ouvrir un terminal dans ce dossier.
-3. Exécuter :
+Le bandeau latéral n'est plus codé en dur. Il vérifie réellement la disponibilité de l'API Supabase via `/api/supabase-status` :
 
-```bash
-npm install
-npm run dev
+- **Supabase connecté** : URL et clé valides, API joignable.
+- **Configuration incomplète** : variable Vercel absente.
+- **Supabase indisponible** : clé invalide, projet arrêté ou API inaccessible.
+
+## Variables Vercel requises
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 ```
 
-4. Ouvrir `http://localhost:3000`.
+Après modification des variables, redéployer le projet.
 
-## Brancher Supabase
+## Important
 
-1. Créer un projet Supabase.
-2. Copier `.env.example` vers `.env.local`.
-3. Renseigner :
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Exécuter `supabase/schema.sql` dans le SQL Editor de Supabase.
-
-## Déployer
-
-Importer le projet dans GitHub, puis dans Vercel. Vercel détectera automatiquement Next.js.
-Ajouter les deux variables Supabase dans les variables d'environnement Vercel.
-
-## Phase suivante
-
-- connexion privée ;
-- enregistrement réel des paris ;
-- synchronisation PC ↔ iPhone ;
-- ingestion automatique des rencontres ;
-- page d'analyse d'un match.
+Cette version valide la connexion d'infrastructure. La persistance fonctionnelle des paris et de la bankroll sera branchée dans l'étape suivante, après création du schéma `supabase/schema.sql` et mise en place de l'authentification utilisateur.
