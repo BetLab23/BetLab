@@ -383,6 +383,7 @@ const rules: InternalCoachRule[] = [
             "decision-score-weak",
             "weakness",
             "warning",
+            "high",
             "Processus encore fragile",
             "Plusieurs dimensions de ta méthode réduisent actuellement la qualité globale de tes décisions.",
             `${decisionScore.score} / 100`,
