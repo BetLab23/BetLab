@@ -5,8 +5,11 @@ import {
   answerBetQuestion,
   generateProactiveInsights,
 } from "@/lib/bets/analysis/engine";
+import { calculateDecisionScore } from "@/lib/bets/analysis/decisionScore";
 import type {
   AnalysisAnswer,
+  DecisionScoreComponent,
+  DecisionScoreTone,
 } from "@/lib/bets/analysis/types";
 import type {
   ProactiveInsight,
@@ -123,6 +126,21 @@ function getInsightIcon(tone: ProactiveInsight["tone"]) {
   return "i";
 }
 
+function getDecisionToneLabel(tone: DecisionScoreTone) {
+  if (tone === "excellent") return "Excellent";
+  if (tone === "good") return "Solide";
+  if (tone === "warning") return "À améliorer";
+  if (tone === "critical") return "Fragile";
+
+  return "Provisoire";
+}
+
+function getComponentScoreLabel(
+  component: DecisionScoreComponent
+) {
+  return `${component.score} / ${component.maximumScore}`;
+}
+
 export function BetAssistant({
   bets,
   metrics,
@@ -134,6 +152,11 @@ export function BetAssistant({
 
   const proactiveInsights = useMemo(
     () => generateProactiveInsights(bets),
+    [bets]
+  );
+
+  const decisionScore = useMemo(
+    () => calculateDecisionScore(bets),
     [bets]
   );
 
@@ -333,6 +356,101 @@ export function BetAssistant({
         </aside>
       </div>
 
+      <div className="decision-score">
+        <div className="decision-score-header">
+          <div>
+            <span className="bet-assistant-section-label">
+              Decision Score
+            </span>
+
+            <h3>Qualité de ton processus de décision</h3>
+          </div>
+
+          <div
+            className={`decision-score-badge ${decisionScore.tone}`}
+          >
+            <strong>{decisionScore.score}</strong>
+            <span>/ 100</span>
+          </div>
+        </div>
+
+        <div className="decision-score-summary">
+          <div>
+            <strong>{decisionScore.label}</strong>
+            <span>
+              {getDecisionToneLabel(decisionScore.tone)}
+            </span>
+          </div>
+
+          <p>
+            {decisionScore.isReliable
+              ? `Score calculé sur ${decisionScore.sampleSize} pari(s) clôturé(s) exploitables.`
+              : `Score provisoire calculé sur ${decisionScore.sampleSize} pari(s) clôturé(s). La fiabilité complète commence à 10.`}
+          </p>
+        </div>
+
+        <div className="decision-score-components">
+          {decisionScore.components.map((component) => (
+            <article
+              key={component.id}
+              className={`decision-score-component ${component.tone}`}
+            >
+              <div className="decision-score-component-heading">
+                <div>
+                  <strong>{component.label}</strong>
+                  <small>{component.summary}</small>
+                </div>
+
+                <span>
+                  {getComponentScoreLabel(component)}
+                </span>
+              </div>
+
+              <div className="decision-score-progress">
+                <span
+                  style={{
+                    width: `${component.percentage}%`,
+                  }}
+                />
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {(decisionScore.strengths.length > 0 ||
+          decisionScore.warnings.length > 0) && (
+          <div className="decision-score-analysis">
+            {decisionScore.strengths.length > 0 && (
+              <div className="decision-score-list strengths">
+                <span>Points forts</span>
+
+                <ul>
+                  {decisionScore.strengths.map(
+                    (strength) => (
+                      <li key={strength}>{strength}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {decisionScore.warnings.length > 0 && (
+              <div className="decision-score-list warnings">
+                <span>À surveiller</span>
+
+                <ul>
+                  {decisionScore.warnings.map(
+                    (warning) => (
+                      <li key={warning}>{warning}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="assistant-insights">
         <div className="assistant-insights-header">
           <div>
@@ -505,6 +623,235 @@ export function BetAssistant({
       </form>
 
       <style jsx>{`
+        .decision-score {
+          margin: 0 22px 20px;
+          padding: 20px;
+          border: 1px solid
+            rgba(143, 162, 189, 0.14);
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.018);
+        }
+
+        .decision-score-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+        }
+
+        .decision-score-header h3 {
+          margin: 5px 0 0;
+          color: var(--text);
+          font-size: 16px;
+        }
+
+        .decision-score-badge {
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+          flex-shrink: 0;
+          padding: 10px 13px;
+          border: 1px solid
+            rgba(143, 162, 189, 0.18);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        .decision-score-badge strong {
+          color: var(--text);
+          font-size: 25px;
+          line-height: 1;
+        }
+
+        .decision-score-badge span {
+          color: var(--muted);
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .decision-score-badge.excellent {
+          border-color: rgba(73, 214, 165, 0.3);
+          background: rgba(73, 214, 165, 0.08);
+        }
+
+        .decision-score-badge.good {
+          border-color: rgba(113, 167, 255, 0.3);
+          background: rgba(113, 167, 255, 0.07);
+        }
+
+        .decision-score-badge.warning {
+          border-color: rgba(244, 178, 85, 0.3);
+          background: rgba(244, 178, 85, 0.07);
+        }
+
+        .decision-score-badge.critical {
+          border-color: rgba(245, 108, 108, 0.3);
+          background: rgba(245, 108, 108, 0.07);
+        }
+
+        .decision-score-badge.insufficient {
+          border-color: rgba(143, 162, 189, 0.22);
+        }
+
+        .decision-score-summary {
+          display: flex;
+          justify-content: space-between;
+          gap: 18px;
+          margin-top: 14px;
+          padding: 12px 13px;
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.025);
+        }
+
+        .decision-score-summary > div {
+          display: grid;
+          gap: 3px;
+          flex-shrink: 0;
+        }
+
+        .decision-score-summary strong {
+          color: var(--text);
+          font-size: 13px;
+        }
+
+        .decision-score-summary span {
+          color: var(--accent);
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .decision-score-summary p {
+          margin: 0;
+          color: var(--muted);
+          font-size: 11px;
+          line-height: 1.5;
+          text-align: right;
+        }
+
+        .decision-score-components {
+          display: grid;
+          grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .decision-score-component {
+          padding: 12px;
+          border: 1px solid
+            rgba(143, 162, 189, 0.13);
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.016);
+        }
+
+        .decision-score-component-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .decision-score-component-heading > div {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .decision-score-component-heading strong {
+          color: var(--text);
+          font-size: 11px;
+        }
+
+        .decision-score-component-heading small {
+          color: var(--muted);
+          font-size: 9px;
+          line-height: 1.4;
+        }
+
+        .decision-score-component-heading > span {
+          flex-shrink: 0;
+          color: var(--text);
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .decision-score-progress {
+          height: 5px;
+          margin-top: 10px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(143, 162, 189, 0.12);
+        }
+
+        .decision-score-progress span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #91b9ff;
+        }
+
+        .decision-score-component.excellent
+          .decision-score-progress span {
+          background: var(--accent);
+        }
+
+        .decision-score-component.warning
+          .decision-score-progress span {
+          background: #f4b255;
+        }
+
+        .decision-score-component.critical
+          .decision-score-progress span {
+          background: #f56c6c;
+        }
+
+        .decision-score-analysis {
+          display: grid;
+          grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .decision-score-list {
+          padding: 12px 13px;
+          border: 1px solid
+            rgba(143, 162, 189, 0.13);
+          border-radius: 13px;
+        }
+
+        .decision-score-list > span {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .decision-score-list.strengths > span {
+          color: var(--accent);
+        }
+
+        .decision-score-list.warnings > span {
+          color: #f4b255;
+        }
+
+        .decision-score-list ul {
+          display: grid;
+          gap: 7px;
+          margin: 0;
+          padding-left: 16px;
+        }
+
+        .decision-score-list li {
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.45;
+        }
+
         .assistant-insights {
           margin: 0 22px 20px;
           padding-top: 20px;
@@ -762,15 +1109,34 @@ export function BetAssistant({
         }
 
         @media (max-width: 760px) {
+          .decision-score-components,
+          .decision-score-analysis,
           .assistant-insights-grid {
             grid-template-columns: 1fr;
+          }
+
+          .decision-score-summary {
+            display: grid;
+          }
+
+          .decision-score-summary p {
+            text-align: left;
           }
         }
 
         @media (max-width: 520px) {
+          .decision-score,
           .assistant-insights {
             margin-right: 17px;
             margin-left: 17px;
+          }
+
+          .decision-score {
+            padding: 16px;
+          }
+
+          .decision-score-header {
+            align-items: flex-start;
           }
 
           .assistant-insights-header {
