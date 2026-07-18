@@ -133,3 +133,84 @@ export type DecisionScoreReport = {
   strengths: string[];
   warnings: string[];
 };
+
+export type CoachFindingType =
+  | "observation"
+  | "strength"
+  | "weakness"
+  | "recommendation"
+  | "bias";
+
+export type CoachFindingTone =
+  | "positive"
+  | "neutral"
+  | "warning"
+  | "critical";
+
+export type CoachFindingPriority =
+  | "low"
+  | "medium"
+  | "high";
+
+export type CoachFinding = {
+  id: string;
+  ruleId: string;
+  type: CoachFindingType;
+  tone: CoachFindingTone;
+  priority: CoachFindingPriority;
+  title: string;
+  description: string;
+  metric: string | null;
+  evidence: string[];
+};
+
+export type CoachBiasType =
+  | "overconfidence"
+  | "recency"
+  | "lossChasing"
+  | "winnerEscalation"
+  | "concentration"
+  | "stakeInconsistency"
+  | "valueMisuse"
+  | "confidenceStakeMismatch";
+
+export type CoachBias = {
+  id: string;
+  ruleId: string;
+  type: CoachBiasType;
+  tone: "warning" | "critical";
+  priority: CoachFindingPriority;
+  title: string;
+  description: string;
+  evidence: string[];
+};
+
+export type CoachReport = {
+  generatedAt: string;
+  sampleSize: number;
+  isReliable: boolean;
+  summary: string;
+  observations: CoachFinding[];
+  strengths: CoachFinding[];
+  weaknesses: CoachFinding[];
+  recommendations: CoachFinding[];
+  detectedBiases: CoachBias[];
+};
+
+export type CoachRuleContext = {
+  decisionScore: DecisionScoreReport;
+};
+
+export type CoachRuleResult = {
+  findings?: CoachFinding[];
+  biases?: CoachBias[];
+};
+
+export type CoachRule = {
+  id: string;
+  label: string;
+  minimumSampleSize: number;
+  evaluate: (
+    context: CoachRuleContext
+  ) => CoachRuleResult | null;
+};
