@@ -14,3 +14,13 @@ button,input{font:inherit}.shell{display:grid;grid-template-columns:250px 1fr;mi
 .sync-missing .sync-dot { background: #e8b454; box-shadow: 0 0 0 4px rgba(232,180,84,.12); }
 .sync-error .sync-dot { background: #e36d6d; box-shadow: 0 0 0 4px rgba(227,109,109,.12); }
 @keyframes syncPulse { 50% { opacity: .35; } }
+
+/* Bets workspace — Core 0.3 */
+.modal-backdrop{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(1,6,12,.78);backdrop-filter:blur(8px)}
+.modal-card{width:min(820px,100%);max-height:92vh;overflow:auto;background:#0c1828;border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.45)}
+.modal-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 22px;border-bottom:1px solid var(--line)}.modal-header h2{margin:0;font-size:22px}.modal-header p{margin:5px 0 0;color:var(--muted)}
+.icon-button{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);cursor:pointer}
+.bet-form{display:grid;gap:16px;padding:22px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.bet-form label{display:grid;gap:7px;color:var(--muted);font-size:13px}.bet-form input,.bet-form textarea{width:100%;background:#071321;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:11px;resize:vertical}.bet-form input:focus,.bet-form textarea:focus{outline:2px solid rgba(73,214,165,.24);border-color:var(--accent)}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px}.primary:disabled{opacity:.6;cursor:wait}.form-error,.app-alert{padding:11px 13px;border:1px solid rgba(227,109,109,.5);border-radius:10px;background:rgba(227,109,109,.1);color:#ffb3b3}.app-alert{margin-bottom:15px}
+.recent-bets{display:grid}.recent-bet{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line)}.recent-bet:last-child{border-bottom:0}.recent-bet small,.table-subtitle{display:block;color:var(--muted);margin-top:4px}.recent-bet-value{text-align:right}.bet-status{display:inline-block;padding:5px 8px;border-radius:999px;background:var(--panel2);font-size:11px;text-transform:capitalize}.bet-status.pending{color:#ffc978}.bet-status.win{color:#6ce4b8}.bet-status.loss{color:#ff9b9b}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.modal-backdrop{padding:8px}.modal-card{max-height:96vh}.modal-actions{position:sticky;bottom:0;padding-top:10px;background:#0c1828}}
