@@ -457,3 +457,79 @@ button,input{font:inherit}.shell{display:grid;grid-template-columns:250px 1fr;mi
     width:100%;
   }
 }
+/* BetLab Core 0.5.3 — Star Rating */
+
+.star-rating-field{
+  display:grid;
+  gap:10px;
+  padding:16px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.015);
+}
+
+.star-rating-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.star-rating-header span{
+  font-size:13px;
+  font-weight:600;
+}
+
+.star-rating-header strong{
+  color:#f5c451;
+  font-size:13px;
+}
+
+.star-rating{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.star-button{
+  appearance:none;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:rgba(245,196,81,.24);
+  font-size:32px;
+  line-height:1;
+  cursor:pointer;
+  transition:
+    color .15s ease,
+    transform .15s ease,
+    filter .15s ease;
+}
+
+.star-button:hover{
+  transform:translateY(-2px) scale(1.06);
+  color:rgba(245,196,81,.72);
+}
+
+.star-button.active{
+  color:#f5c451;
+  filter:drop-shadow(0 0 7px rgba(245,196,81,.2));
+}
+
+.star-button:focus-visible{
+  outline:2px solid #f5c451;
+  outline-offset:4px;
+  border-radius:4px;
+}
+
+.star-button:disabled{
+  cursor:not-allowed;
+  opacity:.55;
+  transform:none;
+}
+
+.star-rating-help{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
