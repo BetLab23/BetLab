@@ -27,43 +27,68 @@ function signedEuros(value: number) {
   return formatted;
 }
 
-function assistantMessage(metrics: AssistantMetrics) {
+function getAssistantAnalysis(metrics: AssistantMetrics) {
   if (metrics.settledCount === 0) {
     return {
-      title: "Analyse en attente",
-      message:
-        "Enregistre et clôture plusieurs paris pour que je puisse commencer à analyser tes performances.",
+      greeting: "Bonjour Valentin.",
+      title: "Je commence à construire ton historique.",
+      summary:
+        "Je manque encore de paris clôturés pour produire une analyse fiable. Continue à enregistrer tes décisions, leur niveau de confiance et leur value.",
+      recommendations: [
+        "Renseigne systématiquement la confiance et la value.",
+        "Clôture les paris terminés pour alimenter les statistiques.",
+      ],
     };
   }
 
-  if (metrics.profit > 0 && metrics.roi > 5) {
+  if (metrics.profit > 0 && metrics.roi >= 10) {
     return {
-      title: "Dynamique positive",
-      message:
-        "Ta bankroll progresse avec un rendement positif. Il faut maintenant vérifier si cette performance se confirme sur davantage de paris.",
+      greeting: "Bonjour Valentin.",
+      title: "Ta dynamique actuelle est positive.",
+      summary:
+        "Ta bankroll progresse et ton rendement est élevé. Le principal enjeu est maintenant de confirmer cette performance sur un échantillon plus important.",
+      recommendations: [
+        "Conserve une gestion de mise disciplinée.",
+        "Ne considère pas encore ce ROI comme définitivement acquis.",
+      ],
     };
   }
 
   if (metrics.profit > 0) {
     return {
-      title: "Bankroll en progression",
-      message:
-        "Tes résultats sont positifs, mais le rendement reste à consolider. Continue de privilégier les paris présentant une vraie value.",
+      greeting: "Bonjour Valentin.",
+      title: "Ta bankroll progresse.",
+      summary:
+        "Les résultats sont positifs, mais le rendement doit encore être consolidé. La priorité reste la qualité des décisions plutôt que l’augmentation rapide des mises.",
+      recommendations: [
+        "Privilégie les paris présentant une value identifiable.",
+        "Évite d’augmenter l’exposition après une courte série positive.",
+      ],
     };
   }
 
   if (metrics.profit < 0) {
     return {
-      title: "Phase de recul",
-      message:
-        "La bankroll est en retrait. Avant d’augmenter les mises, analyse les marchés, les niveaux de confiance et les types de paris les moins performants.",
+      greeting: "Bonjour Valentin.",
+      title: "Ta bankroll traverse une phase de recul.",
+      summary:
+        "Avant d’augmenter ton exposition, il faut identifier les marchés, les tags et les niveaux de confiance associés aux pertes.",
+      recommendations: [
+        "Conserve ou réduis temporairement le niveau des mises.",
+        "Analyse les décisions perdantes avant de chercher à te refaire.",
+      ],
     };
   }
 
   return {
-    title: "Bankroll à l’équilibre",
-    message:
-      "Tes résultats sont actuellement neutres. Le prochain objectif est d’identifier les décisions qui créent réellement de la value.",
+    greeting: "Bonjour Valentin.",
+    title: "Ta bankroll est actuellement à l’équilibre.",
+    summary:
+      "Les résultats ne dégagent pas encore de tendance nette. Le prochain objectif est d’identifier les décisions qui créent réellement de la value.",
+    recommendations: [
+      "Continue à documenter chaque décision.",
+      "Attends davantage de volume avant de tirer une conclusion.",
+    ],
   };
 }
 
@@ -74,74 +99,169 @@ export function BetAssistant({
   bets: Bet[];
   metrics: AssistantMetrics;
 }) {
-  const insight = assistantMessage(metrics);
-  const highValueBets = bets.filter(
+  const analysis = getAssistantAnalysis(metrics);
+
+  const pendingHighValueBets = bets.filter(
     (bet) =>
       bet.status === "pending" &&
       bet.value_rating === "high"
   );
 
+  const highConfidencePendingBets = bets.filter(
+    (bet) =>
+      bet.status === "pending" &&
+      Number(bet.confidence ?? 0) >= 4
+  );
+
   return (
-    <aside className="bet-assistant card">
-      <div className="assistant-header">
-        <div className="assistant-avatar" aria-hidden="true">
-          B
+    <section className="bet-assistant">
+      <div className="bet-assistant-topbar">
+        <div className="bet-assistant-identity">
+          <div className="bet-assistant-avatar" aria-hidden="true">
+            B
+          </div>
+
+          <div>
+            <span className="bet-assistant-eyebrow">
+              Assistante BetLab
+            </span>
+
+            <h2>Analyse de ta stratégie</h2>
+          </div>
         </div>
 
-        <div>
-          <span className="assistant-eyebrow">
-            Assistante BetLab
+        <div className="bet-assistant-online">
+          <span />
+          Analyse locale
+        </div>
+      </div>
+
+      <div className="bet-assistant-content">
+        <div className="bet-assistant-message">
+          <p className="bet-assistant-greeting">
+            {analysis.greeting}
+          </p>
+
+          <h3>{analysis.title}</h3>
+
+          <p className="bet-assistant-summary">
+            {analysis.summary}
+          </p>
+
+          <div className="bet-assistant-signals">
+            <div className="bet-assistant-signal">
+              <span>Bankroll</span>
+              <strong>{euros(metrics.bankroll)}</strong>
+            </div>
+
+            <div className="bet-assistant-signal">
+              <span>Résultat global</span>
+              <strong
+                className={
+                  metrics.profit > 0
+                    ? "positive"
+                    : metrics.profit < 0
+                      ? "negative"
+                      : ""
+                }
+              >
+                {signedEuros(metrics.profit)}
+              </strong>
+            </div>
+
+            <div className="bet-assistant-signal">
+              <span>ROI</span>
+              <strong>{metrics.roi.toFixed(1)} %</strong>
+            </div>
+
+            <div className="bet-assistant-signal">
+              <span>Win rate</span>
+              <strong>{metrics.winRate.toFixed(1)} %</strong>
+            </div>
+          </div>
+
+          <div className="bet-assistant-recommendation">
+            <span className="bet-assistant-section-label">
+              Recommandation actuelle
+            </span>
+
+            <ul>
+              {analysis.recommendations.map((recommendation) => (
+                <li key={recommendation}>
+                  <span aria-hidden="true">✓</span>
+                  <p>{recommendation}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <aside className="bet-assistant-focus">
+          <span className="bet-assistant-section-label">
+            Surveillance
           </span>
 
-          <h2>{insight.title}</h2>
-        </div>
+          <div className="bet-assistant-focus-item">
+            <div>
+              <strong>{metrics.pendingCount}</strong>
+              <span>Paris ouverts</span>
+            </div>
 
-        <span className="assistant-status">
-          Analyse locale
-        </span>
+            <small>
+              {euros(metrics.exposure)} engagés
+            </small>
+          </div>
+
+          <div className="bet-assistant-focus-item">
+            <div>
+              <strong>{pendingHighValueBets.length}</strong>
+              <span>Value forte</span>
+            </div>
+
+            <small>
+              Paris encore ouverts
+            </small>
+          </div>
+
+          <div className="bet-assistant-focus-item">
+            <div>
+              <strong>{highConfidencePendingBets.length}</strong>
+              <span>Confiance élevée</span>
+            </div>
+
+            <small>
+              Niveau 4 ou 5 étoiles
+            </small>
+          </div>
+
+          <div className="bet-assistant-alert">
+            <span aria-hidden="true">!</span>
+
+            <p>
+              {metrics.pendingCount === 0
+                ? "Aucune exposition en cours actuellement."
+                : pendingHighValueBets.length > 0
+                  ? `${pendingHighValueBets.length} pari(s) ouvert(s) sont classés en value forte.`
+                  : "Aucun pari ouvert n’est actuellement classé en value forte."}
+            </p>
+          </div>
+        </aside>
       </div>
 
-      <p className="assistant-message">
-        {insight.message}
-      </p>
-
-      <div className="assistant-indicators">
+      <div className="bet-assistant-prompt">
         <div>
-          <span>Bankroll</span>
-          <strong>{euros(metrics.bankroll)}</strong>
+          <span>Poser une question à l’assistante</span>
+
+          <p>
+            Le dialogue interactif sera activé lors de la connexion du moteur IA.
+          </p>
         </div>
 
-        <div>
-          <span>Résultat</span>
-          <strong>{signedEuros(metrics.profit)}</strong>
-        </div>
-
-        <div>
-          <span>ROI</span>
-          <strong>{metrics.roi.toFixed(1)} %</strong>
-        </div>
+        <button type="button" disabled>
+          Bientôt
+          <span aria-hidden="true">→</span>
+        </button>
       </div>
-
-      <div className="assistant-focus">
-        <span>Point d’attention</span>
-
-        <p>
-          {highValueBets.length > 0
-            ? `${highValueBets.length} pari(s) ouvert(s) sont classés en value forte, pour une exposition totale de ${euros(metrics.exposure)}.`
-            : metrics.pendingCount > 0
-              ? `${metrics.pendingCount} pari(s) sont actuellement ouverts, mais aucun n’est classé en value forte.`
-              : "Aucun pari n’est actuellement ouvert."}
-        </p>
-      </div>
-
-      <button
-        type="button"
-        className="assistant-details-button"
-        disabled
-      >
-        Voir l’analyse détaillée
-        <span>Bientôt</span>
-      </button>
-    </aside>
+    </section>
   );
 }
