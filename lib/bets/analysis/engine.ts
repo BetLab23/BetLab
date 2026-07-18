@@ -601,3 +601,327 @@ export function answerBetQuestion(
     ],
   };
 }
+export type ProactiveInsight = {
+  id: string;
+  tone: "positive" | "warning" | "neutral";
+  title: string;
+  description: string;
+  metric: string;
+};
+
+type CategorizedSegment = {
+  category: string;
+  segment: SegmentPerformance;
+};
+
+function getAllCategorizedSegments(
+  report: BetAnalysisReport
+): CategorizedSegment[] {
+  return [
+    ...report.sports.map((segment) => ({
+      category: "Sport",
+      segment,
+    })),
+
+    ...report.competitions.map((segment) => ({
+      category: "Compétition",
+      segment,
+    })),
+
+    ...report.markets.map((segment) => ({
+      category: "Marché",
+      segment,
+    })),
+
+    ...report.bookmakers.map((segment) => ({
+      category: "Bookmaker",
+      segment,
+    })),
+
+    ...report.confidence.map((segment) => ({
+      category: "Confiance",
+      segment,
+    })),
+
+    ...report.value.map((segment) => ({
+      category: "Value",
+      segment,
+    })),
+
+    ...report.odds.map((segment) => ({
+      category: "Cotes",
+      segment,
+    })),
+
+    ...report.tags.map((segment) => ({
+      category: "Tag",
+      segment,
+    })),
+  ];
+}
+
+function findBestCategorizedSegment(
+  segments: CategorizedSegment[],
+  minimumBets: number
+) {
+  return [...segments]
+    .filter(({ segment }) => segment.bets >= minimumBets)
+    .sort((a, b) => {
+      if (b.segment.profit !== a.segment.profit) {
+        return b.segment.profit - a.segment.profit;
+      }
+
+      return b.segment.roi - a.segment.roi;
+    })[0];
+}
+
+function findWorstCategorizedSegment(
+  segments: CategorizedSegment[],
+  minimumBets: number
+) {
+  return [...segments]
+    .filter(({ segment }) => segment.bets >= minimumBets)
+    .sort((a, b) => {
+      if (a.segment.profit !== b.segment.profit) {
+        return a.segment.profit - b.segment.profit;
+      }
+
+      return a.segment.roi - b.segment.roi;
+    })[0];
+}
+
+function getInsightMinimumBets(settledBets: number) {
+  if (settledBets >= 100) return 10;
+  if (settledBets >= 50) return 7;
+  if (settledBets >= 20) return 4;
+
+  return 2;
+}
+
+export function generateProactiveInsights(
+  bets: Bet[]
+): ProactiveInsight[] {
+  const report = analyzeBets(bets);
+  const insights: ProactiveInsight[] = [];
+
+  const settledCount =
+    report.global.wins +
+    report.global.losses;
+
+  if (settledCount === 0) {
+    return [
+      {
+        id: "no-settled-bets",
+        tone: "neutral",
+        title: "Historique en construction",
+        description:
+          "Aucun pari exploitable n’est encore clôturé. Les premiers enseignements apparaîtront après l’enregistrement de plusieurs résultats.",
+        metric: `${report.global.pendingBets} pari(s) ouvert(s)`,
+      },
+    ];
+  }
+
+  if (settledCount < 5) {
+    insights.push({
+      id: "limited-sample",
+      tone: "neutral",
+      title: "Échantillon encore limité",
+      description:
+        "Les tendances détectées doivent rester provisoires. Quelques résultats peuvent encore modifier fortement le ROI et le classement des segments.",
+      metric: `${settledCount} pari(s) analysé(s)`,
+    });
+  }
+
+  const minimumBets = getInsightMinimumBets(settledCount);
+
+  const categorizedSegments =
+    getAllCategorizedSegments(report).filter(
+      ({ segment }) =>
+        segment.label !== "Non renseigné" &&
+        segment.label !== "Non renseignée" &&
+        segment.label !== "Sans tag"
+    );
+
+  const bestSegment = findBestCategorizedSegment(
+    categorizedSegments,
+    minimumBets
+  );
+
+  if (
+    bestSegment &&
+    bestSegment.segment.profit > 0 &&
+    bestSegment.segment.roi > 0
+  ) {
+    insights.push({
+      id: `best-${bestSegment.category}-${bestSegment.segment.key}`,
+      tone: "positive",
+      title: "Segment performant détecté",
+      description:
+        `${bestSegment.segment.label} est actuellement l’un de tes meilleurs segments dans la catégorie ${bestSegment.category.toLocaleLowerCase(
+          "fr-FR"
+        )}. Il affiche ${signedEuros(
+          bestSegment.segment.profit
+        )} de résultat pour un ROI de ${percentage(
+          bestSegment.segment.roi
+        )}.`,
+      metric: `${bestSegment.segment.bets} pari(s)`,
+    });
+  }
+
+  const worstSegment = findWorstCategorizedSegment(
+    categorizedSegments,
+    minimumBets
+  );
+
+  if (
+    worstSegment &&
+    worstSegment.segment.profit < 0 &&
+    worstSegment.segment.roi < 0
+  ) {
+    insights.push({
+      id: `worst-${worstSegment.category}-${worstSegment.segment.key}`,
+      tone: "warning",
+      title: "Segment à surveiller",
+      description:
+        `${worstSegment.segment.label} concentre actuellement une partie importante des pertes dans la catégorie ${worstSegment.category.toLocaleLowerCase(
+          "fr-FR"
+        )}. Son résultat est de ${signedEuros(
+          worstSegment.segment.profit
+        )}, avec un ROI de ${percentage(
+          worstSegment.segment.roi
+        )}.`,
+      metric: `${worstSegment.segment.bets} pari(s)`,
+    });
+  }
+
+  const riskyConfidence = [...report.confidence]
+    .filter(
+      (segment) =>
+        segment.bets >= minimumBets &&
+        segment.label !== "Non renseignée" &&
+        segment.roi < 0
+    )
+    .sort((a, b) => a.roi - b.roi)[0];
+
+  if (riskyConfidence) {
+    insights.push({
+      id: `confidence-${riskyConfidence.key}`,
+      tone: "warning",
+      title: "Confiance à recalibrer",
+      description:
+        `Les paris classés ${riskyConfidence.label} affichent actuellement un ROI de ${percentage(
+          riskyConfidence.roi
+        )}. Ton niveau de conviction ne se traduit donc pas encore par un avantage mesurable sur ce segment.`,
+      metric: signedEuros(riskyConfidence.profit),
+    });
+  }
+
+  const riskyOddsRange = [...report.odds]
+    .filter(
+      (segment) =>
+        segment.bets >= minimumBets &&
+        segment.roi < 0
+    )
+    .sort((a, b) => a.roi - b.roi)[0];
+
+  if (riskyOddsRange) {
+    insights.push({
+      id: `odds-${riskyOddsRange.key}`,
+      tone: "warning",
+      title: "Plage de cotes défavorable",
+      description:
+        `La plage ${riskyOddsRange.label} affiche actuellement un ROI de ${percentage(
+          riskyOddsRange.roi
+        )}. Elle mérite une analyse plus stricte avant d’y augmenter le volume ou les mises.`,
+      metric: `${riskyOddsRange.bets} pari(s)`,
+    });
+  }
+
+  const pendingBets = bets.filter(
+    (bet) => bet.status === "pending"
+  );
+
+  if (
+    pendingBets.length > 0 &&
+    report.global.exposure > 0
+  ) {
+    const bookmakerExposure = new Map<string, number>();
+
+    for (const bet of pendingBets) {
+      const bookmaker =
+        bet.bookmaker.trim() || "Non renseigné";
+
+      bookmakerExposure.set(
+        bookmaker,
+        (bookmakerExposure.get(bookmaker) ?? 0) +
+          getStake(bet)
+      );
+    }
+
+    const mainBookmaker = [...bookmakerExposure.entries()]
+      .map(([bookmaker, exposure]) => ({
+        bookmaker,
+        exposure,
+        share:
+          (exposure / report.global.exposure) * 100,
+      }))
+      .sort((a, b) => b.exposure - a.exposure)[0];
+
+    if (
+      mainBookmaker &&
+      mainBookmaker.share >= 60 &&
+      pendingBets.length >= 2
+    ) {
+      insights.push({
+        id: `exposure-${mainBookmaker.bookmaker}`,
+        tone: "warning",
+        title: "Exposition concentrée",
+        description:
+          `${percentage(
+            mainBookmaker.share
+          )} de ton exposition actuelle est concentrée chez ${mainBookmaker.bookmaker}. Cette concentration ne constitue pas nécessairement un problème, mais elle mérite d’être surveillée.`,
+        metric: euros(mainBookmaker.exposure),
+      });
+    }
+  }
+
+  const confidenceMissing = bets.filter(
+    (bet) => bet.confidence === null
+  ).length;
+
+  const valueMissing = bets.filter(
+    (bet) => bet.value_rating === null
+  ).length;
+
+  const metadataMissing =
+    confidenceMissing + valueMissing;
+
+  if (
+    bets.length >= 5 &&
+    metadataMissing > bets.length * 0.5
+  ) {
+    insights.push({
+      id: "missing-metadata",
+      tone: "neutral",
+      title: "Données à compléter",
+      description:
+        "Une partie importante de l’historique ne contient pas encore toutes les informations de confiance ou de value. Cela limite la précision des analyses stratégiques.",
+      metric: `${metadataMissing} champ(s) manquant(s)`,
+    });
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      id: "stable-performance",
+      tone: "neutral",
+      title: "Aucune anomalie majeure",
+      description:
+        "Le moteur ne détecte actuellement aucun segment suffisamment représentatif qui exige une attention particulière.",
+      metric: `ROI global ${percentage(
+        report.global.roi
+      )}`,
+    });
+  }
+
+  return insights.slice(0, 4);
+}
