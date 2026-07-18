@@ -7,6 +7,7 @@ import { listBets } from "@/lib/bets/client";
 import type { Bet } from "@/lib/bets/types";
 import { NewBetModal } from "./NewBetModal";
 import { EditBetModal } from "./EditBetModal";
+import { BetAssistant } from "./BetAssistant";
 
 const INITIAL_BANKROLL = 10_000;
 
@@ -222,8 +223,13 @@ export function BetsWorkspace({
       {error && <div className="app-alert">{error}</div>}
 
       {mode === "dashboard" && (
-        <>
-          <div className="kpi-grid dashboard-kpis">
+  <>
+    <BetAssistant
+      bets={bets}
+      metrics={metrics}
+    />
+
+    <div className="kpi-grid dashboard-kpis">
             <KpiCard
               label="Bankroll"
               value={euros(metrics.bankroll)}
