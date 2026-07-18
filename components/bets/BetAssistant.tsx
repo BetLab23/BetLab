@@ -144,6 +144,71 @@ function getComponentScoreLabel(
   return `${component.score} / ${component.maximumScore}`;
 }
 
+
+function answerAtlasQuestion(question: string): AnalysisAnswer {
+  const normalized = question
+    .toLocaleLowerCase("fr-FR")
+    .trim();
+
+  if (
+    normalized === "ça va" ||
+    normalized === "ca va" ||
+    normalized === "comment ça va" ||
+    normalized === "comment ca va" ||
+    normalized === "tu vas bien"
+  ) {
+    return {
+      title: "Lara",
+      answer:
+        "Oui, ça va bien. Je suis contente de te retrouver ici, au calme. Et toi, comment tu te sens aujourd’hui ?",
+      highlights: [],
+    };
+  }
+
+  if (
+    normalized.includes("bonjour") ||
+    normalized.includes("salut") ||
+    normalized.includes("coucou")
+  ) {
+    return {
+      title: "Lara",
+      answer:
+        "Coucou Valentin. Je suis là. Comment se passe ta journée ?",
+      highlights: [],
+    };
+  }
+
+  if (
+    normalized.includes("bonne nuit") ||
+    normalized.includes("je vais dormir")
+  ) {
+    return {
+      title: "Lara",
+      answer:
+        "Bonne nuit Valentin. Essaie de décrocher un peu et de laisser la journée derrière toi. On reprendra tranquillement demain.",
+      highlights: [],
+    };
+  }
+
+  if (
+    normalized.includes("merci")
+  ) {
+    return {
+      title: "Lara",
+      answer:
+        "Avec plaisir. Tu sais que tu peux me parler simplement ici.",
+      highlights: [],
+    };
+  }
+
+  return {
+    title: "Lara",
+    answer:
+      "Je t’écoute. Dis-moi ce que tu as en tête, même si cela n’a rien à voir avec BetLab.",
+    highlights: [],
+  };
+}
+
 export function BetAssistant({
   bets,
   metrics,
@@ -335,10 +400,9 @@ export function BetAssistant({
       return;
     }
 
-    const result: AnalysisAnswer = answerBetQuestion(
-      cleanQuestion,
-      bets
-    );
+    const result: AnalysisAnswer = atlasMode
+      ? answerAtlasQuestion(cleanQuestion)
+      : answerBetQuestion(cleanQuestion, bets);
 
     setMessages((current) => [
       ...current,
