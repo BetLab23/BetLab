@@ -28,6 +28,8 @@ type AssistantMetrics = {
   profit30Days: number;
 };
 
+type CopilotMode = "alfred" | "lara" | "duo";
+
 type ConversationMessage =
   | {
       role: "user";
@@ -170,6 +172,30 @@ export function BetAssistant({
   const [messages, setMessages] = useState<
     ConversationMessage[]
   >([]);
+  const [copilotMode, setCopilotMode] =
+    useState<CopilotMode>("duo");
+
+  const copilotIdentity =
+    copilotMode === "alfred"
+      ? {
+          name: "Alfred",
+          eyebrow: "Copilote BetLab",
+          subtitle: "Calme, rigoureux et structuré",
+          image: "/alfred-avatar.png",
+        }
+      : copilotMode === "lara"
+        ? {
+            name: "Lara",
+            eyebrow: "Copilote BetLab",
+            subtitle: "Chaleureuse, intuitive et directe",
+            image: "/lara-avatar.png",
+          }
+        : {
+            name: "Alfred & Lara",
+            eyebrow: "Duo de copilotes BetLab",
+            subtitle: "Deux personnalités, un même moteur",
+            image: "",
+          };
 
   const pendingHighValueBets = bets.filter(
     (bet) =>
@@ -221,32 +247,103 @@ export function BetAssistant({
     <section className="bet-assistant">
       <div className="bet-assistant-topbar">
         <div className="bet-assistant-identity">
-          <div
-            className="bet-assistant-avatar"
-            aria-hidden="true"
-          >
-            B
-          </div>
+          {copilotMode === "duo" ? (
+            <div
+              className="bet-assistant-avatar-stack"
+              aria-label="Alfred et Lara"
+            >
+              <img
+                src="/alfred-avatar.png"
+                alt="Alfred"
+              />
+              <img
+                src="/lara-avatar.png"
+                alt="Lara"
+              />
+            </div>
+          ) : (
+            <img
+              className="bet-assistant-avatar-image"
+              src={copilotIdentity.image}
+              alt={copilotIdentity.name}
+            />
+          )}
 
           <div>
             <span className="bet-assistant-eyebrow">
-              Assistante BetLab
+              {copilotIdentity.eyebrow}
             </span>
 
-            <h2>Analyse de ta stratégie</h2>
+            <h2>{copilotIdentity.name}</h2>
+
+            <p className="bet-assistant-persona-subtitle">
+              {copilotIdentity.subtitle}
+            </p>
           </div>
         </div>
 
-        <div className="bet-assistant-online">
-          <span />
-          Moteur actif
+        <div className="bet-assistant-actions">
+          <div
+            className="copilot-selector"
+            role="group"
+            aria-label="Choisir le copilote"
+          >
+            <button
+              type="button"
+              className={
+                copilotMode === "alfred" ? "active" : ""
+              }
+              onClick={() => setCopilotMode("alfred")}
+            >
+              <img
+                src="/alfred-avatar.png"
+                alt=""
+                aria-hidden="true"
+              />
+              Alfred
+            </button>
+
+            <button
+              type="button"
+              className={
+                copilotMode === "lara" ? "active" : ""
+              }
+              onClick={() => setCopilotMode("lara")}
+            >
+              <img
+                src="/lara-avatar.png"
+                alt=""
+                aria-hidden="true"
+              />
+              Lara
+            </button>
+
+            <button
+              type="button"
+              className={
+                copilotMode === "duo" ? "active" : ""
+              }
+              onClick={() => setCopilotMode("duo")}
+            >
+              Duo
+            </button>
+          </div>
+
+          <div className="bet-assistant-online">
+            <span />
+            Moteur actif
+          </div>
         </div>
       </div>
 
       <div className="bet-assistant-content">
         <div className="bet-assistant-message">
           <p className="bet-assistant-greeting">
-            {analysis.greeting}
+            {copilotMode === "alfred"
+              ? "Alfred à ton service."
+              : copilotMode === "lara"
+                ? "Lara est avec toi."
+                : analysis.greeting}
           </p>
 
           <h3>{analysis.title}</h3>
@@ -799,6 +896,128 @@ export function BetAssistant({
       </form>
 
       <style jsx>{`
+        .bet-assistant-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+        }
+
+        .bet-assistant-identity {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          min-width: 0;
+        }
+
+        .bet-assistant-identity h2 {
+          margin: 3px 0 0;
+        }
+
+        .bet-assistant-avatar-image {
+          width: 54px;
+          height: 54px;
+          flex: 0 0 54px;
+          object-fit: cover;
+          object-position: center 24%;
+          border: 1px solid rgba(208, 174, 104, 0.35);
+          border-radius: 16px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .bet-assistant-avatar-stack {
+          position: relative;
+          width: 79px;
+          height: 56px;
+          flex: 0 0 79px;
+        }
+
+        .bet-assistant-avatar-stack img {
+          position: absolute;
+          top: 0;
+          width: 54px;
+          height: 54px;
+          object-fit: cover;
+          object-position: center 24%;
+          border: 2px solid #10151c;
+          border-radius: 16px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .bet-assistant-avatar-stack img:first-child {
+          left: 0;
+        }
+
+        .bet-assistant-avatar-stack img:last-child {
+          right: 0;
+        }
+
+        .bet-assistant-persona-subtitle {
+          margin: 4px 0 0;
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.4;
+        }
+
+        .bet-assistant-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+
+        .copilot-selector {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px;
+          border: 1px solid rgba(143, 162, 189, 0.14);
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.018);
+        }
+
+        .copilot-selector button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          min-height: 32px;
+          padding: 5px 9px;
+          border: 0;
+          border-radius: 9px;
+          background: transparent;
+          color: var(--muted);
+          font: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          cursor: pointer;
+          transition:
+            background 160ms ease,
+            color 160ms ease,
+            transform 160ms ease;
+        }
+
+        .copilot-selector button:hover {
+          color: var(--text);
+          transform: translateY(-1px);
+        }
+
+        .copilot-selector button.active {
+          background: rgba(208, 174, 104, 0.12);
+          color: #e5c680;
+          box-shadow:
+            inset 0 0 0 1px
+            rgba(208, 174, 104, 0.2);
+        }
+
+        .copilot-selector img {
+          width: 22px;
+          height: 22px;
+          object-fit: cover;
+          object-position: center 24%;
+          border-radius: 7px;
+        }
+
         .decision-score {
           margin: 0 22px 20px;
           padding: 20px;
@@ -1536,6 +1755,25 @@ export function BetAssistant({
         }
 
         @media (max-width: 760px) {
+          .bet-assistant-topbar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .bet-assistant-actions {
+            width: 100%;
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .copilot-selector {
+            width: 100%;
+          }
+
+          .copilot-selector button {
+            flex: 1;
+          }
+
           .decision-score-components,
           .decision-score-analysis,
           .coach-report-grid,
