@@ -2,7 +2,12 @@ import type { Bet } from "@/lib/bets/types";
 
 import type {
   AnalysisAnswer,
+  AnalysisValue,
   BetAnalysisReport,
+  CrossAnalysisFilters,
+  CrossAnalysisPerformance,
+  CrossAnalysisResult,
+  ParsedAnalysisQuery,
   SegmentPerformance,
 } from "./types";
 
@@ -268,6 +273,426 @@ function buildRankingAnswer(
   };
 }
 
+function createEmptyCrossFilters(): CrossAnalysisFilters {
+  return {
+    sports: [],
+    competitions: [],
+    markets: [],
+    bookmakers: [],
+    confidenceLevels: [],
+    values: [],
+    tags: [],
+    minimumOdds: null,
+    maximumOdds: null,
+  };
+}
+
+function uniqueTextValues(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function detectKnownValues(
+  question: string,
+  values: string[]
+) {
+  const normalizedQuestion = normalizeText(question);
+
+  return uniqueTextValues(values).filter((value) =>
+    normalizedQuestion.includes(normalizeText(value))
+  );
+}
+
+function parseQuestionNumber(value: string) {
+  return Number(value.replace(",", "."));
+}
+
+function parseOddsFilters(
+  normalizedQuestion: string,
+  filters: CrossAnalysisFilters,
+  detectedFilters: string[]
+) {
+  const betweenMatch = normalizedQuestion.match(
+    /(?:entre|de)\s+(\d+(?:[.,]\d+)?)\s+(?:et|a)\s+(\d+(?:[.,]\d+)?)/
+  );
+
+  if (betweenMatch) {
+    const first = parseQuestionNumber(betweenMatch[1]);
+    const second = parseQuestionNumber(betweenMatch[2]);
+
+    filters.minimumOdds = Math.min(first, second);
+    filters.maximumOdds = Math.max(first, second);
+    detectedFilters.push(
+      `Cotes : ${filters.minimumOdds.toFixed(2)} à ${filters.maximumOdds.toFixed(2)}`
+    );
+    return;
+  }
+
+  const minimumMatch = normalizedQuestion.match(
+    /(?:cote(?:s)?\s*)?(?:superieure?s?|au-dessus|plus de|minimum|min)\s*(?:a|de|:)?\s*(\d+(?:[.,]\d+)?)/
+  );
+
+  if (minimumMatch) {
+    filters.minimumOdds = parseQuestionNumber(minimumMatch[1]);
+    detectedFilters.push(
+      `Cote minimale : ${filters.minimumOdds.toFixed(2)}`
+    );
+  }
+
+  const maximumMatch = normalizedQuestion.match(
+    /(?:cote(?:s)?\s*)?(?:inferieure?s?|en-dessous|moins de|maximum|max)\s*(?:a|de|:)?\s*(\d+(?:[.,]\d+)?)/
+  );
+
+  if (maximumMatch) {
+    filters.maximumOdds = parseQuestionNumber(maximumMatch[1]);
+    detectedFilters.push(
+      `Cote maximale : ${filters.maximumOdds.toFixed(2)}`
+    );
+  }
+}
+
+export function parseAnalysisQuery(
+  question: string,
+  bets: Bet[]
+): ParsedAnalysisQuery {
+  const filters = createEmptyCrossFilters();
+  const detectedFilters: string[] = [];
+  const normalizedQuestion = normalizeText(question);
+
+  filters.sports = detectKnownValues(
+    question,
+    bets.map((bet) => bet.sport)
+  );
+
+  filters.competitions = detectKnownValues(
+    question,
+    bets.map((bet) => bet.competition)
+  );
+
+  filters.markets = detectKnownValues(
+    question,
+    bets.map((bet) => bet.market)
+  );
+
+  filters.bookmakers = detectKnownValues(
+    question,
+    bets.map((bet) => bet.bookmaker)
+  );
+
+  filters.tags = detectKnownValues(
+    question,
+    bets.flatMap((bet) => bet.tags)
+  );
+
+  filters.sports.forEach((value) =>
+    detectedFilters.push(`Sport : ${value}`)
+  );
+
+  filters.competitions.forEach((value) =>
+    detectedFilters.push(`Compétition : ${value}`)
+  );
+
+  filters.markets.forEach((value) =>
+    detectedFilters.push(`Marché : ${value}`)
+  );
+
+  filters.bookmakers.forEach((value) =>
+    detectedFilters.push(`Bookmaker : ${value}`)
+  );
+
+  filters.tags.forEach((value) =>
+    detectedFilters.push(`Tag : ${value}`)
+  );
+
+  const confidenceMatches = [
+    ...normalizedQuestion.matchAll(
+      /(?:confiance\s*(?:de|:)?\s*)?([1-5])\s*(?:etoile?s?|★)/g
+    ),
+  ];
+
+  filters.confidenceLevels = [
+    ...new Set(
+      confidenceMatches.map((match) => Number(match[1]))
+    ),
+  ];
+
+  filters.confidenceLevels.forEach((confidence) =>
+    detectedFilters.push(`Confiance : ${confidence} étoile${confidence > 1 ? "s" : ""}`)
+  );
+
+  const valueMatches: Array<{
+    value: AnalysisValue;
+    patterns: string[];
+    label: string;
+  }> = [
+    {
+      value: "high",
+      patterns: [
+        "value forte",
+        "forte value",
+        "valeur forte",
+        "haute value",
+      ],
+      label: "Forte",
+    },
+    {
+      value: "medium",
+      patterns: [
+        "value moyenne",
+        "moyenne value",
+        "valeur moyenne",
+      ],
+      label: "Moyenne",
+    },
+    {
+      value: "low",
+      patterns: [
+        "value faible",
+        "faible value",
+        "valeur faible",
+      ],
+      label: "Faible",
+    },
+  ];
+
+  for (const valueMatch of valueMatches) {
+    if (
+      valueMatch.patterns.some((pattern) =>
+        normalizedQuestion.includes(pattern)
+      )
+    ) {
+      filters.values.push(valueMatch.value);
+      detectedFilters.push(`Value : ${valueMatch.label}`);
+    }
+  }
+
+  parseOddsFilters(
+    normalizedQuestion,
+    filters,
+    detectedFilters
+  );
+
+  return {
+    filters,
+    detectedFilters: [...new Set(detectedFilters)],
+  };
+}
+
+function matchesTextFilter(
+  value: string,
+  acceptedValues: string[]
+) {
+  if (acceptedValues.length === 0) return true;
+
+  const normalizedValue = normalizeText(value);
+
+  return acceptedValues.some(
+    (acceptedValue) =>
+      normalizeText(acceptedValue) === normalizedValue
+  );
+}
+
+function betMatchesCrossFilters(
+  bet: Bet,
+  filters: CrossAnalysisFilters
+) {
+  const odds = Number(bet.odds);
+
+  if (!matchesTextFilter(bet.sport, filters.sports)) {
+    return false;
+  }
+
+  if (
+    !matchesTextFilter(
+      bet.competition,
+      filters.competitions
+    )
+  ) {
+    return false;
+  }
+
+  if (!matchesTextFilter(bet.market, filters.markets)) {
+    return false;
+  }
+
+  if (
+    !matchesTextFilter(
+      bet.bookmaker,
+      filters.bookmakers
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    filters.confidenceLevels.length > 0 &&
+    !filters.confidenceLevels.includes(
+      Number(bet.confidence ?? 0)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    filters.values.length > 0 &&
+    !filters.values.includes(
+      bet.value_rating as AnalysisValue
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    filters.tags.length > 0 &&
+    !filters.tags.some((requestedTag) =>
+      bet.tags.some(
+        (tag) =>
+          normalizeText(tag) === normalizeText(requestedTag)
+      )
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    filters.minimumOdds !== null &&
+    odds < filters.minimumOdds
+  ) {
+    return false;
+  }
+
+  if (
+    filters.maximumOdds !== null &&
+    odds > filters.maximumOdds
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function calculateCrossPerformance(
+  bets: Bet[]
+): CrossAnalysisPerformance {
+  const pendingBets = bets.filter(
+    (bet) => bet.status === "pending"
+  );
+
+  const settledBets = bets.filter(isSettledBet);
+  const performanceBets = bets.filter(countsForPerformance);
+
+  const wins = performanceBets.filter(
+    (bet) => bet.status === "win"
+  ).length;
+
+  const losses = performanceBets.filter(
+    (bet) => bet.status === "loss"
+  ).length;
+
+  const voids = settledBets.filter(
+    (bet) => bet.status === "void"
+  ).length;
+
+  const stake = performanceBets.reduce(
+    (sum, bet) => sum + getStake(bet),
+    0
+  );
+
+  const exposure = pendingBets.reduce(
+    (sum, bet) => sum + getStake(bet),
+    0
+  );
+
+  const profit = performanceBets.reduce(
+    (sum, bet) => sum + getProfit(bet),
+    0
+  );
+
+  return {
+    totalBets: bets.length,
+    settledBets: settledBets.length,
+    pendingBets: pendingBets.length,
+    wins,
+    losses,
+    voids,
+    stake,
+    exposure,
+    profit,
+    roi: calculateRoi(profit, stake),
+    winRate: calculateWinRate(wins, losses),
+  };
+}
+
+export function analyzeCrossFilters(
+  question: string,
+  bets: Bet[]
+): CrossAnalysisResult {
+  const parsedQuery = parseAnalysisQuery(question, bets);
+
+  const matchingBets = bets.filter((bet) =>
+    betMatchesCrossFilters(bet, parsedQuery.filters)
+  );
+
+  return {
+    filters: parsedQuery.filters,
+    detectedFilters: parsedQuery.detectedFilters,
+    performance: calculateCrossPerformance(matchingBets),
+  };
+}
+
+function buildCrossAnalysisAnswer(
+  result: CrossAnalysisResult
+): AnalysisAnswer {
+  const { performance, detectedFilters } = result;
+  const filterDescription = detectedFilters.join(" + ");
+
+  if (performance.totalBets === 0) {
+    return {
+      title: "Analyse croisée",
+      answer:
+        `Je n’ai trouvé aucun pari correspondant à la combinaison suivante : ${filterDescription}.`,
+      highlights: detectedFilters,
+    };
+  }
+
+  if (performance.settledBets === 0) {
+    return {
+      title: "Analyse croisée",
+      answer:
+        `J’ai trouvé ${performance.totalBets} pari(s) correspondant à ${filterDescription}, mais aucun n’est encore clôturé. L’exposition actuelle est de ${euros(
+          performance.exposure
+        )}.`,
+      highlights: [
+        `${performance.pendingBets} pari(s) ouvert(s)`,
+        `Exposition : ${euros(performance.exposure)}`,
+      ],
+    };
+  }
+
+  const reliabilitySentence =
+    performance.wins + performance.losses < 5
+      ? " L’échantillon reste limité : cette tendance doit être considérée comme provisoire."
+      : "";
+
+  return {
+    title: "Analyse croisée",
+    answer:
+      `Sur la combinaison ${filterDescription}, tu affiches un résultat de ${signedEuros(
+        performance.profit
+      )}, un ROI de ${percentage(
+        performance.roi
+      )} et un win rate de ${percentage(
+        performance.winRate
+      )} sur ${performance.wins + performance.losses} pari(s) exploitable(s).${reliabilitySentence}`,
+    highlights: [
+      `Mises : ${euros(performance.stake)}`,
+      `${performance.wins} gagné(s) / ${performance.losses} perdu(s)`,
+      performance.pendingBets > 0
+        ? `Ouverts : ${performance.pendingBets}`
+        : "Aucun pari ouvert",
+    ],
+  };
+}
+
 export function analyzeBets(bets: Bet[]): BetAnalysisReport {
   const pendingBets = bets.filter(
     (bet) => bet.status === "pending"
@@ -369,6 +794,7 @@ export function answerBetQuestion(
 ): AnalysisAnswer {
   const report = analyzeBets(bets);
   const normalizedQuestion = normalizeText(question);
+  const crossAnalysis = analyzeCrossFilters(question, bets);
 
   if (report.global.settledBets === 0) {
     return {
@@ -380,6 +806,10 @@ export function answerBetQuestion(
         `${euros(report.global.exposure)} exposés`,
       ],
     };
+  }
+
+  if (crossAnalysis.detectedFilters.length >= 2) {
+    return buildCrossAnalysisAnswer(crossAnalysis);
   }
 
   if (
@@ -601,6 +1031,7 @@ export function answerBetQuestion(
     ],
   };
 }
+
 export type ProactiveInsight = {
   id: string;
   tone: "positive" | "warning" | "neutral";
