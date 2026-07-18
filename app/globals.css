@@ -588,3 +588,117 @@ button,input{font:inherit}.shell{display:grid;grid-template-columns:250px 1fr;mi
   background:rgba(245,196,81,.12);
   color:#f5c451;
 }
+/* BetLab Core 0.5.3 — Premium bet list */
+
+.premium-bet-row{
+  align-items:flex-start;
+}
+
+.premium-bet-main{
+  display:grid;
+  min-width:0;
+  gap:5px;
+  text-align:left;
+}
+
+.premium-bet-title{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.premium-bet-title strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.bet-decision-meta{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:4px;
+}
+
+.bet-confidence{
+  color:#f5c451;
+  font-size:15px;
+  line-height:1;
+  letter-spacing:1px;
+  white-space:nowrap;
+}
+
+.value-badge,
+.bet-tag{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:3px 8px;
+  font-size:11px;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.value-badge{
+  font-weight:700;
+}
+
+.value-badge.low{
+  border-color:rgba(239,68,68,.35);
+  background:rgba(239,68,68,.09);
+  color:#f28b8b;
+}
+
+.value-badge.medium{
+  border-color:rgba(245,196,81,.35);
+  background:rgba(245,196,81,.09);
+  color:#f5c451;
+}
+
+.value-badge.high{
+  border-color:rgba(34,197,94,.35);
+  background:rgba(34,197,94,.09);
+  color:#67d889;
+}
+
+.bet-tag{
+  background:rgba(255,255,255,.025);
+  color:var(--muted);
+}
+
+.table-match{
+  display:block;
+  white-space:nowrap;
+}
+
+.table-decision{
+  display:grid;
+  justify-items:start;
+  gap:6px;
+  min-width:145px;
+}
+
+.table-stars{
+  font-size:14px;
+}
+
+.decision-tags{
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media (max-width: 900px){
+  .premium-bet-title .bet-status{
+    display:none;
+  }
+
+  .bet-tag{
+    display:none;
+  }
+}
