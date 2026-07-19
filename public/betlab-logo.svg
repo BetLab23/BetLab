@@ -1,0 +1,48 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="116" y1="80" x2="342" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6D982"/>
+      <stop offset="0.48" stop-color="#C9A24A"/>
+      <stop offset="1" stop-color="#806025"/>
+    </linearGradient>
+    <linearGradient id="emerald" x1="252" y1="110" x2="394" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EE2AE"/>
+      <stop offset="1" stop-color="#147858"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientTransform="translate(256 224) rotate(90) scale(250)">
+      <stop stop-color="#172027"/>
+      <stop offset="1" stop-color="#070A0D"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="256" cy="256" r="232" fill="url(#bg)" stroke="#26333B" stroke-width="4"/>
+  <circle cx="256" cy="256" r="201" stroke="url(#gold)" stroke-width="6" opacity="0.88"/>
+  <path d="M74 261C74 160.5 155.5 79 256 79" stroke="#D8B75B" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+  <path d="M438 251C438 351.5 356.5 433 256 433" stroke="#3DD49D" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+
+  <!-- Flask -->
+  <path d="M205 105H307" stroke="url(#gold)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M228 109V205L154 334C141 357 158 386 185 386H327C354 386 371 357 358 334L284 205V109"
+        stroke="url(#gold)" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M190 312C221 291 291 291 322 312L350 360C356 371 348 384 335 384H177C164 384 156 371 162 360L190 312Z"
+        fill="url(#emerald)" opacity="0.92"/>
+
+  <!-- Analytics bars -->
+  <rect x="216" y="223" width="18" height="54" rx="7" fill="#37C993"/>
+  <rect x="247" y="199" width="18" height="78" rx="7" fill="#52DCA6"/>
+  <rect x="278" y="167" width="18" height="110" rx="7" fill="#72E6B8"/>
+  <path d="M207 223L255 188L292 150" stroke="#E7C66F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="M274 150H292V168" stroke="#E7C66F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Football -->
+  <circle cx="256" cy="342" r="55" fill="#10171C" stroke="#E7C66F" stroke-width="6"/>
+  <path d="M256 319L275 333L268 356H244L237 333L256 319Z" fill="#E7C66F"/>
+  <path d="M256 287L256 319M211 320L237 333M301 320L275 333M228 377L244 356M284 377L268 356"
+        stroke="#E7C66F" stroke-width="5" stroke-linecap="round"/>
+  <path d="M211 320L219 294L244 286L256 287L268 286L293 294L301 320L294 351L284 377L256 391L228 377L218 351L211 320Z"
+        stroke="#6F5725" stroke-width="3" opacity="0.9"/>
+</svg>
