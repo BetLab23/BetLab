@@ -1441,3 +1441,229 @@ body {
 
   color:var(--text-primary);
 }
+
+/* =========================================================
+   BETLAB — METALLIC EMERALD OVERRIDE V1
+   Bloc final prioritaire : rend les changements visibles
+   sans modifier la structure de l'application.
+   ========================================================= */
+
+:root{
+  --bg:#03080b;
+  --panel:#0a1418;
+  --panel2:#0f1d21;
+  --line:rgba(198,229,218,.13);
+
+  --text:#f4f7f5;
+  --muted:#91a59f;
+
+  --accent:#17b889;
+  --accent2:#d6b85f;
+
+  --betlab-gold:#d8b95f;
+  --betlab-gold-light:#f2dc91;
+  --betlab-gold-deep:#8d681c;
+
+  --betlab-emerald:#17b889;
+  --betlab-emerald-light:#8df0d0;
+  --betlab-emerald-mid:#2ecaa0;
+  --betlab-emerald-deep:#075f49;
+}
+
+html,
+body{
+  background:
+    radial-gradient(circle at 12% -10%, rgba(28,191,143,.13), transparent 27%),
+    radial-gradient(circle at 88% 0, rgba(216,185,95,.10), transparent 25%),
+    linear-gradient(180deg,#03080b 0%,#061014 100%);
+}
+
+/* Sidebar */
+.sidebar,
+.betlab-sidebar{
+  background:
+    radial-gradient(circle at 50% 0, rgba(216,185,95,.10), transparent 25%),
+    radial-gradient(circle at 5% 35%, rgba(23,184,137,.07), transparent 32%),
+    linear-gradient(180deg,#020709 0%,#061014 100%) !important;
+  border-right:1px solid rgba(216,185,95,.18) !important;
+  box-shadow:18px 0 48px rgba(0,0,0,.28);
+}
+
+/* Logo / identité */
+.brand b,
+.betlab-brand-name strong:last-child,
+.betlab-emerald{
+  background:linear-gradient(
+    180deg,
+    #d8fff3 0%,
+    #94f1d3 18%,
+    #42d4aa 38%,
+    #17b889 58%,
+    #08775b 78%,
+    #55dfb8 100%
+  ) !important;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+  color:transparent !important;
+  text-shadow:0 0 18px rgba(23,184,137,.16);
+}
+
+.betlab-brand-name strong:first-child,
+.betlab-gold{
+  background:linear-gradient(
+    180deg,
+    #fff3bd 0%,
+    #f1d77f 20%,
+    #d8b95f 48%,
+    #9b7424 72%,
+    #f4df91 100%
+  ) !important;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+  color:transparent !important;
+}
+
+/* Navigation */
+.nav-link{
+  color:#8ea19b;
+  border:1px solid transparent;
+}
+
+.nav-link:hover{
+  color:#e7f2ee;
+  background:rgba(23,184,137,.07);
+  border-color:rgba(23,184,137,.16);
+}
+
+.nav-link.active{
+  color:#f7faf8;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(216,185,95,.17),
+      rgba(23,184,137,.12)
+    ) !important;
+  border-color:rgba(216,185,95,.28);
+  box-shadow:
+    inset 3px 0 0 #d8b95f,
+    0 10px 24px rgba(0,0,0,.18);
+}
+
+.nav-link.active svg,
+.nav-link:hover svg{
+  color:#52ddb7;
+  filter:drop-shadow(0 0 7px rgba(23,184,137,.22));
+}
+
+/* Cartes */
+.card,
+.betlab-card,
+.bet-assistant,
+.modal-card{
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.025),transparent 38%),
+    linear-gradient(145deg,#0d191e,#081217) !important;
+  border-color:rgba(216,185,95,.16) !important;
+  box-shadow:
+    0 20px 46px rgba(0,0,0,.26),
+    inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.card:hover{
+  border-color:rgba(23,184,137,.22);
+}
+
+/* Boutons */
+.primary,
+.pill.active,
+.betlab-button,
+.betlab-primary-button{
+  background:
+    linear-gradient(
+      180deg,
+      #58dfb9 0%,
+      #27c89b 34%,
+      #119b75 68%,
+      #087158 100%
+    ) !important;
+  color:#02110c !important;
+  border:1px solid rgba(141,240,208,.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    0 0 0 1px rgba(5,95,73,.45),
+    0 9px 24px rgba(0,0,0,.28),
+    0 0 18px rgba(23,184,137,.16);
+}
+
+.primary:hover,
+.pill.active:hover,
+.betlab-button:hover,
+.betlab-primary-button:hover{
+  filter:brightness(1.08) saturate(1.05);
+}
+
+.secondary,
+.icon-button,
+.settle{
+  background:linear-gradient(180deg,#132126,#0d181d) !important;
+  border-color:rgba(216,185,95,.18) !important;
+}
+
+/* Accents verts existants */
+.league,
+.analytics-positive,
+.analytics-assistant-label,
+.analytics-reliability strong,
+.bet-assistant-eyebrow,
+.bet-assistant-avatar,
+.bet-assistant-prompt button span{
+  color:#55dfb8 !important;
+}
+
+.dashboard-insight,
+.analytics-reliability,
+.bet-assistant-online{
+  border-color:rgba(23,184,137,.27) !important;
+  background:rgba(23,184,137,.07) !important;
+}
+
+.chart-line{
+  stroke:#2ecaa0 !important;
+}
+
+.chart-point{
+  fill:#5fe2bc !important;
+}
+
+.analytics-assistant-card::before,
+.bet-assistant::before{
+  background:linear-gradient(
+    90deg,
+    #d8b95f 0%,
+    #43d3aa 48%,
+    transparent 100%
+  ) !important;
+}
+
+/* Statut Supabase */
+.sync-card{
+  background:linear-gradient(145deg,#0c181c,#081216) !important;
+  border-color:rgba(23,184,137,.18) !important;
+}
+
+.sync-connected .sync-dot{
+  background:#43d3aa !important;
+  box-shadow:0 0 0 4px rgba(67,211,170,.12),0 0 12px rgba(67,211,170,.28) !important;
+}
+
+/* Mobile */
+.mobile-nav{
+  background:rgba(2,7,9,.97) !important;
+  border-top-color:rgba(216,185,95,.16) !important;
+}
+
+.mobile-nav a.active{
+  color:#55dfb8 !important;
+}
