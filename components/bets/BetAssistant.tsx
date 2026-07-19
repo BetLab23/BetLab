@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   answerBetQuestion,
   generateProactiveInsights,
@@ -317,6 +317,10 @@ export function BetAssistant({
     useState(false);
   const [atlasMode, setAtlasMode] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const copilotIdentity =
     copilotMode === "alfred"
@@ -355,6 +359,116 @@ export function BetAssistant({
       bet.status === "pending" &&
       Number(bet.confidence ?? 0) >= 4
   );
+
+  function stopSpeaking() {
+    if (typeof window === "undefined") return;
+
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
+  }
+
+  function speakAssistantText(
+    textToSpeak: string,
+    author: "alfred" | "lara"
+  ) {
+    if (
+      !voiceMode ||
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window)
+    ) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(
+      textToSpeak
+    );
+
+    utterance.lang = "fr-FR";
+    utterance.rate = author === "alfred" ? 0.9 : 1;
+    utterance.pitch = author === "alfred" ? 0.82 : 1.08;
+    utterance.volume = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+
+    const preferredVoice =
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("fr") &&
+          (author === "alfred"
+            ? /male|homme|paul|henri|thomas|daniel/i.test(
+                voice.name
+              )
+            : /female|femme|hortense|julie|audrey|marie/i.test(
+                voice.name
+              ))
+      ) ??
+      voices.find((voice) =>
+        voice.lang.toLowerCase().startsWith("fr")
+      );
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function toggleListening() {
+    if (typeof window === "undefined") return;
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ??
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      window.alert(
+        "La reconnaissance vocale n’est pas disponible dans ce navigateur."
+      );
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "fr-FR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      stopSpeaking();
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript =
+        event.results?.[0]?.[0]?.transcript?.trim();
+
+      if (transcript) {
+        setQuestion(transcript);
+        askAssistant(transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
 
   function askAssistant(rawQuestion: string) {
     const cleanQuestion = rawQuestion.trim();
@@ -520,6 +634,13 @@ export function BetAssistant({
     ]);
 
     setQuestion("");
+
+    window.setTimeout(() => {
+      speakAssistantText(
+        result.answer,
+        assistantAuthor
+      );
+    }, 120);
   }
 
   function handleSubmit(
@@ -533,11 +654,18 @@ export function BetAssistant({
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsChatOpen(false);
+        recognitionRef.current?.stop();
+        stopSpeaking();
       }
     }
 
     window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    };
   }, []);
 
   return (
@@ -986,7 +1114,7 @@ export function BetAssistant({
           type="button"
           className={`bet-assistant-avatar-launcher ${
             isChatOpen ? "is-open" : ""
-          }`}
+          } ${isSpeaking ? "is-speaking" : ""}`}
           onClick={() => setIsChatOpen((current) => !current)}
           aria-expanded={isChatOpen}
           aria-label={
@@ -1164,6 +1292,57 @@ export function BetAssistant({
           </div>
         </div>
       </div>
+
+        <div className="assistant-voice-controls">
+          <button
+            type="button"
+            className={`assistant-voice-toggle ${
+              voiceMode ? "active" : ""
+            }`}
+            onClick={() => {
+              setVoiceMode((current) => {
+                const next = !current;
+
+                if (!next) {
+                  recognitionRef.current?.stop();
+                  stopSpeaking();
+                }
+
+                return next;
+              });
+            }}
+            aria-pressed={voiceMode}
+          >
+            <span aria-hidden="true">
+              {voiceMode ? "🔊" : "🔇"}
+            </span>
+            Mode vocal
+          </button>
+
+          {voiceMode && (
+            <button
+              type="button"
+              className={`assistant-mic-button ${
+                isListening ? "listening" : ""
+              }`}
+              onClick={toggleListening}
+              aria-pressed={isListening}
+            >
+              <span aria-hidden="true">🎙️</span>
+              {isListening ? "J’écoute…" : "Parler"}
+            </button>
+          )}
+
+          {isSpeaking && (
+            <button
+              type="button"
+              className="assistant-stop-voice"
+              onClick={stopSpeaking}
+            >
+              Arrêter la voix
+            </button>
+          )}
+        </div>
 
         <div className="bet-assistant-chat-scroll">
       {messages.length > 0 && (
@@ -1397,6 +1576,8 @@ export function BetAssistant({
 
         .launcher-avatar-video {
           transform: translateZ(0);
+          backface-visibility: hidden;
+          will-change: auto;
         }
 
         .launcher-duo {
@@ -1437,8 +1618,10 @@ export function BetAssistant({
           border-radius: 38px;
           background: rgba(208, 174, 104, 0.42);
           filter: blur(18px);
-          opacity: 0.62;
-          animation: launcherGlow 2.2s ease-in-out infinite;
+          opacity: 0.56;
+          transition:
+            opacity 220ms ease,
+            transform 220ms ease;
         }
 
         .launcher-status {
@@ -1474,12 +1657,15 @@ export function BetAssistant({
         }
 
         .bet-assistant-avatar-launcher {
-          animation: launcherFrameFloat 3.4s ease-in-out infinite;
+          animation: none;
         }
 
-        .bet-assistant-avatar-launcher:hover,
-        .bet-assistant-avatar-launcher.is-open {
-          animation: launcherFrameActive 1.25s ease-in-out infinite;
+        .bet-assistant-avatar-launcher:hover
+          .launcher-glow,
+        .bet-assistant-avatar-launcher.is-open
+          .launcher-glow {
+          opacity: 0.82;
+          transform: scale(1.06);
         }
 
         .bet-assistant-chat-backdrop {
@@ -1549,6 +1735,79 @@ export function BetAssistant({
           border-radius: 22px;
         }
 
+        .assistant-voice-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 12px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .assistant-voice-controls button {
+          display: inline-flex;
+          min-height: 34px;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          padding: 0 11px;
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 11px;
+          background: rgba(255, 255, 255, 0.04);
+          color: #cbd5df;
+          font-size: 11px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .assistant-voice-toggle.active {
+          border-color: rgba(87, 219, 174, 0.35);
+          background: rgba(87, 219, 174, 0.11);
+          color: #72ddb8;
+        }
+
+        .assistant-mic-button.listening {
+          border-color: rgba(237, 110, 110, 0.4);
+          background: rgba(237, 110, 110, 0.12);
+          color: #ffadad;
+          animation: microphonePulse 1.15s ease-in-out infinite;
+        }
+
+        .assistant-stop-voice {
+          color: #e9cf91 !important;
+        }
+
+        .bet-assistant-avatar-launcher.is-speaking
+          .launcher-glow {
+          animation: launcherSpeakingGlow 0.8s ease-in-out infinite;
+        }
+
+        .bet-assistant-avatar-launcher.is-speaking
+          .launcher-status {
+          background: #e7c66f;
+          animation: launcherSpeakingStatus 0.65s ease-in-out infinite;
+        }
+
+        @keyframes microphonePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.035); }
+        }
+
+        @keyframes launcherSpeakingGlow {
+          0%, 100% {
+            opacity: 0.42;
+            transform: scale(0.94);
+          }
+          50% {
+            opacity: 0.95;
+            transform: scale(1.18);
+          }
+        }
+
+        @keyframes launcherSpeakingStatus {
+          0%, 100% { transform: scale(0.82); }
+          50% { transform: scale(1.18); }
+        }
+
         .bet-assistant-chat-scroll {
           flex: 1 1 auto;
           min-height: 220px;
@@ -1565,24 +1824,6 @@ export function BetAssistant({
           height: 58px;
           flex-basis: 58px;
           border-radius: 18px;
-        }
-
-        @keyframes launcherFrameFloat {
-          0%, 100% {
-            translate: 0 0;
-          }
-          50% {
-            translate: 0 -5px;
-          }
-        }
-
-        @keyframes launcherFrameActive {
-          0%, 100% {
-            translate: 0 0;
-          }
-          50% {
-            translate: 0 -3px;
-          }
         }
 
         @keyframes launcherFloat {
