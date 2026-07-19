@@ -455,114 +455,8 @@ export function BetAssistant({
         atlasMode ? "bet-assistant-atlas" : ""
       }`}
     >
-      <div className="bet-assistant-topbar">
-        <div className="bet-assistant-identity">
-          {copilotMode === "duo" ? (
-            <div
-              className="bet-assistant-avatar-stack"
-              aria-label="Alfred et Lara"
-            >
-              <img
-                src="/alfred-avatar.png"
-                alt="Alfred"
-              />
-              <img
-                src="/lara-avatar.png"
-                alt="Lara"
-              />
-            </div>
-          ) : (
-            <img
-              className="bet-assistant-avatar-image"
-              src={copilotIdentity.image}
-              alt={copilotIdentity.name}
-            />
-          )}
 
-          <div>
-            <span className="bet-assistant-eyebrow">
-              {copilotIdentity.eyebrow}
-            </span>
-
-            <h2>{copilotIdentity.name}</h2>
-
-            <p className="bet-assistant-persona-subtitle">
-              {copilotIdentity.subtitle}
-            </p>
-          </div>
-        </div>
-
-        <div className="bet-assistant-actions">
-          {personasUnlocked && (
-            <div
-              className="copilot-selector"
-              role="group"
-              aria-label="Choisir le copilote"
-            >
-              <button
-                type="button"
-                className={
-                  copilotMode === "alfred" ? "active" : ""
-                }
-                onClick={() => {
-                  setAtlasMode(false);
-                  setCopilotMode("alfred");
-                }}
-              >
-                <img
-                  src="/alfred-avatar.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-                Alfred
-              </button>
-
-              <button
-                type="button"
-                className={
-                  copilotMode === "lara" ? "active" : ""
-                }
-                onClick={() => {
-                  setAtlasMode(false);
-                  setCopilotMode("lara");
-                }}
-              >
-                <img
-                  src="/lara-avatar.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-                Lara
-              </button>
-
-              <button
-                type="button"
-                className={
-                  copilotMode === "duo" ? "active" : ""
-                }
-                onClick={() => {
-                  setAtlasMode(false);
-                  setCopilotMode("duo");
-                }}
-              >
-                Duo
-              </button>
-            </div>
-          )}
-
-          {atlasMode && (
-            <div className="atlas-mode-badge">
-              ATLAS
-            </div>
-          )}
-
-          <div className="bet-assistant-online">
-            <span />
-            Moteur actif
-          </div>
-        </div>
-      </div>
-
+      <div className="bet-assistant-main">
       <div className="bet-assistant-content">
         <div className="bet-assistant-message">
           <p className="bet-assistant-greeting">
@@ -994,7 +888,118 @@ export function BetAssistant({
           ))}
         </div>
       </div>
+      </div>
 
+      <aside className="bet-assistant-chat-panel">
+      <div className="bet-assistant-topbar">
+        <div className="bet-assistant-identity">
+          {copilotMode === "duo" ? (
+            <div
+              className="bet-assistant-avatar-stack"
+              aria-label="Alfred et Lara"
+            >
+              <img
+                src="/alfred-avatar.png"
+                alt="Alfred"
+              />
+              <img
+                src="/lara-avatar.png"
+                alt="Lara"
+              />
+            </div>
+          ) : (
+            <img
+              className="bet-assistant-avatar-image"
+              src={copilotIdentity.image}
+              alt={copilotIdentity.name}
+            />
+          )}
+
+          <div>
+            <span className="bet-assistant-eyebrow">
+              {copilotIdentity.eyebrow}
+            </span>
+
+            <h2>{copilotIdentity.name}</h2>
+
+            <p className="bet-assistant-persona-subtitle">
+              {copilotIdentity.subtitle}
+            </p>
+          </div>
+        </div>
+
+        <div className="bet-assistant-actions">
+          {personasUnlocked && (
+            <div
+              className="copilot-selector"
+              role="group"
+              aria-label="Choisir le copilote"
+            >
+              <button
+                type="button"
+                className={
+                  copilotMode === "alfred" ? "active" : ""
+                }
+                onClick={() => {
+                  setAtlasMode(false);
+                  setCopilotMode("alfred");
+                }}
+              >
+                <img
+                  src="/alfred-avatar.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                Alfred
+              </button>
+
+              <button
+                type="button"
+                className={
+                  copilotMode === "lara" ? "active" : ""
+                }
+                onClick={() => {
+                  setAtlasMode(false);
+                  setCopilotMode("lara");
+                }}
+              >
+                <img
+                  src="/lara-avatar.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                Lara
+              </button>
+
+              <button
+                type="button"
+                className={
+                  copilotMode === "duo" ? "active" : ""
+                }
+                onClick={() => {
+                  setAtlasMode(false);
+                  setCopilotMode("duo");
+                }}
+              >
+                Duo
+              </button>
+            </div>
+          )}
+
+          {atlasMode && (
+            <div className="atlas-mode-badge">
+              ATLAS
+            </div>
+          )}
+
+          <div className="bet-assistant-online">
+            <span />
+            Moteur actif
+          </div>
+        </div>
+      </div>
+
+        <div className="bet-assistant-chat-scroll">
       {messages.length > 0 && (
         <div className="assistant-conversation">
           {messages.slice(-8).map(
@@ -1082,6 +1087,7 @@ export function BetAssistant({
           )}
         </div>
       )}
+        </div>
 
       <div className="assistant-suggestions">
         <button
@@ -1171,8 +1177,184 @@ export function BetAssistant({
           <span aria-hidden="true">→</span>
         </button>
       </form>
+      </aside>
 
       <style jsx>{`
+        .bet-assistant {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+          gap: 22px;
+          align-items: start;
+        }
+
+        .bet-assistant-main {
+          min-width: 0;
+        }
+
+        .bet-assistant-chat-panel {
+          position: sticky;
+          top: 18px;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          height: calc(100vh - 36px);
+          max-height: 860px;
+          padding: 18px;
+          overflow: hidden;
+          border: 1px solid rgba(208, 174, 104, 0.18);
+          border-radius: 22px;
+          background:
+            radial-gradient(
+              circle at 50% 0%,
+              rgba(208, 174, 104, 0.06),
+              transparent 34%
+            ),
+            rgba(12, 17, 23, 0.96);
+          box-shadow:
+            0 18px 50px rgba(0, 0, 0, 0.28),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(16px);
+        }
+
+        .bet-assistant-chat-panel
+          .bet-assistant-topbar {
+          flex: 0 0 auto;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .bet-assistant-chat-panel
+          .bet-assistant-avatar-image {
+          width: 72px;
+          height: 72px;
+          flex-basis: 72px;
+          border-radius: 20px;
+        }
+
+        .bet-assistant-chat-panel
+          .bet-assistant-avatar-stack {
+          width: 102px;
+          height: 74px;
+          flex-basis: 102px;
+        }
+
+        .bet-assistant-chat-panel
+          .bet-assistant-avatar-stack img {
+          width: 72px;
+          height: 72px;
+          border-radius: 20px;
+        }
+
+        .bet-assistant-chat-scroll {
+          flex: 1 1 auto;
+          min-height: 220px;
+          margin: 14px -4px 12px 0;
+          padding-right: 6px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color:
+            rgba(208, 174, 104, 0.32)
+            transparent;
+        }
+
+        .bet-assistant-chat-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .bet-assistant-chat-scroll::-webkit-scrollbar-thumb {
+          border-radius: 999px;
+          background: rgba(208, 174, 104, 0.32);
+        }
+
+        .bet-assistant-chat-panel
+          .assistant-conversation {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          background: transparent;
+        }
+
+        .bet-assistant-chat-panel
+          .assistant-message-avatar {
+          width: 52px;
+          height: 52px;
+          border-radius: 16px;
+        }
+
+        .bet-assistant-chat-panel
+          .assistant-avatar-shell {
+          width: 52px;
+          height: 52px;
+          flex-basis: 52px;
+          border-radius: 16px;
+        }
+
+        .bet-assistant-chat-panel
+          .assistant-message-bubble {
+          max-width: calc(100% - 64px);
+        }
+
+        .bet-assistant-chat-panel
+          .assistant-conversation-message.user
+          .assistant-message-bubble {
+          max-width: 88%;
+        }
+
+        .bet-assistant-chat-panel
+          .assistant-suggestions {
+          flex: 0 0 auto;
+          margin-top: 4px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .bet-assistant-chat-panel
+          .bet-assistant-prompt {
+          flex: 0 0 auto;
+          margin-top: 12px;
+        }
+
+        @media (max-width: 1180px) {
+          .bet-assistant {
+            grid-template-columns: 1fr;
+          }
+
+          .bet-assistant-chat-panel {
+            position: relative;
+            top: auto;
+            width: 100%;
+            height: 720px;
+            max-height: none;
+          }
+        }
+
+        @media (max-width: 680px) {
+          .bet-assistant-chat-panel {
+            height: 680px;
+            padding: 14px;
+            border-radius: 18px;
+          }
+
+          .bet-assistant-chat-panel
+            .bet-assistant-avatar-image {
+            width: 62px;
+            height: 62px;
+            flex-basis: 62px;
+          }
+
+          .bet-assistant-chat-panel
+            .assistant-message-avatar,
+          .bet-assistant-chat-panel
+            .assistant-avatar-shell {
+            width: 46px;
+            height: 46px;
+            flex-basis: 46px;
+          }
+        }
+
         .bet-assistant-atlas {
           border-color: rgba(208, 174, 104, 0.28);
           background:
