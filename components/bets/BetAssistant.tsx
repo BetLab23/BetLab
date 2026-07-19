@@ -1014,19 +1014,36 @@ export function BetAssistant({
                   className={`assistant-conversation-message ${message.role}`}
                 >
                   {message.role === "assistant" && (
-                    <img
-                      className="assistant-message-avatar"
-                      src={
+                    <div
+                      className={`assistant-avatar-shell ${
+                        index === messages.slice(-8).length - 1
+                          ? "is-active"
+                          : ""
+                      } ${
                         assistantAuthor === "lara"
-                          ? "/lara-avatar.png"
-                          : "/alfred-avatar.png"
-                      }
-                      alt={
-                        assistantAuthor === "lara"
-                          ? "Lara"
-                          : "Alfred"
-                      }
-                    />
+                          ? "is-lara"
+                          : "is-alfred"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span className="assistant-avatar-glow" />
+
+                      <img
+                        className="assistant-message-avatar"
+                        src={
+                          assistantAuthor === "lara"
+                            ? "/lara-avatar.png"
+                            : "/alfred-avatar.png"
+                        }
+                        alt={
+                          assistantAuthor === "lara"
+                            ? "Lara"
+                            : "Alfred"
+                        }
+                      />
+
+                      <span className="assistant-avatar-status" />
+                    </div>
                   )}
 
                   <div className="assistant-message-bubble">
@@ -1926,15 +1943,146 @@ export function BetAssistant({
           justify-content: flex-end;
         }
 
-        .assistant-message-avatar {
+        .assistant-avatar-shell {
+          position: relative;
           width: 40px;
           height: 40px;
           flex: 0 0 40px;
+          border-radius: 12px;
+          animation: assistantAvatarBreathe 4.8s ease-in-out infinite;
+          transform-origin: center bottom;
+        }
+
+        .assistant-message-avatar {
+          position: relative;
+          z-index: 2;
+          width: 40px;
+          height: 40px;
+          display: block;
           object-fit: cover;
           object-position: center 24%;
           border: 1px solid rgba(208, 174, 104, 0.3);
           border-radius: 12px;
           box-shadow: 0 7px 20px rgba(0, 0, 0, 0.22);
+        }
+
+        .assistant-avatar-glow {
+          position: absolute;
+          z-index: 1;
+          inset: -5px;
+          border-radius: 16px;
+          opacity: 0;
+          filter: blur(8px);
+          pointer-events: none;
+          transition: opacity 180ms ease;
+        }
+
+        .assistant-avatar-shell.is-alfred
+          .assistant-avatar-glow {
+          background: rgba(198, 166, 96, 0.34);
+        }
+
+        .assistant-avatar-shell.is-lara
+          .assistant-avatar-glow {
+          background: rgba(142, 180, 138, 0.34);
+        }
+
+        .assistant-avatar-shell.is-active
+          .assistant-avatar-glow {
+          opacity: 1;
+          animation: assistantAvatarGlow 1.55s ease-in-out infinite;
+        }
+
+        .assistant-avatar-status {
+          position: absolute;
+          z-index: 3;
+          right: -2px;
+          bottom: -2px;
+          width: 10px;
+          height: 10px;
+          border: 2px solid #141414;
+          border-radius: 999px;
+          background: #6fbe76;
+          box-shadow: 0 0 0 0 rgba(111, 190, 118, 0.45);
+        }
+
+        .assistant-avatar-shell.is-active
+          .assistant-avatar-status {
+          animation: assistantAvatarStatus 1.65s ease-out infinite;
+        }
+
+        .assistant-avatar-shell.is-active {
+          animation:
+            assistantAvatarSpeak 0.9s ease-in-out infinite,
+            assistantAvatarBreathe 4.8s ease-in-out infinite;
+        }
+
+        @keyframes assistantAvatarBreathe {
+          0%,
+          100% {
+            transform: translateY(0) scale(1);
+          }
+
+          50% {
+            transform: translateY(-1px) scale(1.015);
+          }
+        }
+
+        @keyframes assistantAvatarSpeak {
+          0%,
+          100% {
+            transform: translateY(0) scale(1);
+          }
+
+          25% {
+            transform: translateY(-1px) scale(1.025);
+          }
+
+          50% {
+            transform: translateY(0) scale(1.01);
+          }
+
+          75% {
+            transform: translateY(-0.5px) scale(1.02);
+          }
+        }
+
+        @keyframes assistantAvatarGlow {
+          0%,
+          100% {
+            opacity: 0.35;
+            transform: scale(0.96);
+          }
+
+          50% {
+            opacity: 0.85;
+            transform: scale(1.08);
+          }
+        }
+
+        @keyframes assistantAvatarStatus {
+          0% {
+            box-shadow: 0 0 0 0 rgba(111, 190, 118, 0.45);
+          }
+
+          70% {
+            box-shadow: 0 0 0 7px rgba(111, 190, 118, 0);
+          }
+
+          100% {
+            box-shadow: 0 0 0 0 rgba(111, 190, 118, 0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .assistant-avatar-shell,
+          .assistant-avatar-shell.is-active,
+          .assistant-avatar-shell.is-active
+            .assistant-avatar-glow,
+          .assistant-avatar-shell.is-active
+            .assistant-avatar-status {
+            animation: none;
+          }
         }
 
         .assistant-message-bubble {
