@@ -1003,11 +1003,33 @@ export function BetAssistant({
               <img src="/lara-avatar.png" alt="Lara" />
             </span>
           ) : (
-            <img
-              className="launcher-main-avatar"
-              src={copilotIdentity.image}
-              alt={copilotIdentity.name}
-            />
+            <video
+              key={`${copilotIdentity.name}-${atlasMode}`}
+              className="launcher-main-avatar launcher-avatar-video"
+              autoPlay
+              loop
+              muted
+              playsInline
+              poster={copilotIdentity.image}
+              aria-label={copilotIdentity.name}
+            >
+              <source
+                src={
+                  copilotMode === "lara" || atlasMode
+                    ? "/lara-avatar.webm"
+                    : "/alfred-avatar.webm"
+                }
+                type="video/webm"
+              />
+              <source
+                src={
+                  copilotMode === "lara" || atlasMode
+                    ? "/lara-avatar.mp4"
+                    : "/alfred-avatar.mp4"
+                }
+                type="video/mp4"
+              />
+            </video>
           )}
 
           <span className="launcher-status" />
@@ -1339,9 +1361,8 @@ export function BetAssistant({
         .bet-assistant-launcher-zone {
           position: fixed;
           z-index: 70;
-          top: 50%;
+          top: calc(50% - 79px);
           right: 22px;
-          transform: translateY(-50%);
           pointer-events: none;
         }
 
@@ -1368,10 +1389,14 @@ export function BetAssistant({
           object-position: center 22%;
           border: 2px solid rgba(208, 174, 104, 0.5);
           border-radius: 34px;
-          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
-          animation:
-            launcherFloat 3.2s ease-in-out infinite,
-            launcherTilt 7s ease-in-out infinite;
+          background: #111820;
+          box-shadow:
+            0 18px 42px rgba(0, 0, 0, 0.42),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .launcher-avatar-video {
+          transform: translateZ(0);
         }
 
         .launcher-duo {
@@ -1448,11 +1473,13 @@ export function BetAssistant({
           box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
-        .bet-assistant-avatar-launcher:hover
-          .launcher-main-avatar,
-        .bet-assistant-avatar-launcher.is-open
-          .launcher-main-avatar {
-          animation: launcherTalk 0.72s ease-in-out infinite;
+        .bet-assistant-avatar-launcher {
+          animation: launcherFrameFloat 3.4s ease-in-out infinite;
+        }
+
+        .bet-assistant-avatar-launcher:hover,
+        .bet-assistant-avatar-launcher.is-open {
+          animation: launcherFrameActive 1.25s ease-in-out infinite;
         }
 
         .bet-assistant-chat-backdrop {
@@ -1540,6 +1567,24 @@ export function BetAssistant({
           border-radius: 18px;
         }
 
+        @keyframes launcherFrameFloat {
+          0%, 100% {
+            translate: 0 0;
+          }
+          50% {
+            translate: 0 -5px;
+          }
+        }
+
+        @keyframes launcherFrameActive {
+          0%, 100% {
+            translate: 0 0;
+          }
+          50% {
+            translate: 0 -3px;
+          }
+        }
+
         @keyframes launcherFloat {
           0%, 100% {
             transform: translateY(0) scale(1);
@@ -1608,7 +1653,6 @@ export function BetAssistant({
             top: auto;
             right: 10px;
             bottom: 14px;
-            transform: none;
           }
 
           .bet-assistant-avatar-launcher {
@@ -1640,6 +1684,7 @@ export function BetAssistant({
         }
 
         @media (prefers-reduced-motion: reduce) {
+          .bet-assistant-avatar-launcher,
           .launcher-main-avatar,
           .launcher-duo img,
           .launcher-glow,
