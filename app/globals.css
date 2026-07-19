@@ -1323,3 +1323,121 @@ body {
     font-size: 8px;
   }
 }
+:root{
+  /* ===== OR BETLAB ===== */
+  --gold-100:#FFF3B0;
+  --gold-200:#F8DE83;
+  --gold-300:#E9C85B;
+  --gold-400:#D4AF37;
+  --gold-500:#B7891F;
+  --gold-600:#8F6512;
+
+  /* ===== VERT ÉMERAUDE MÉTALLIQUE ===== */
+  --emerald-100:#BDF8EA;
+  --emerald-200:#72E8C9;
+  --emerald-300:#2FD0A3;
+  --emerald-400:#12B887;
+  --emerald-500:#0A9C73;
+  --emerald-600:#06654C;
+
+  /* ===== FONDS ===== */
+  --bg-900:#020609;
+  --bg-800:#071018;
+  --bg-700:#0D1822;
+
+  /* ===== TEXTE ===== */
+  --text-primary:#F7F6F2;
+  --text-secondary:#AAB7C3;
+}
+
+/* ===== Effets Premium ===== */
+
+.betlab-gold{
+  background:linear-gradient(
+      180deg,
+      #FFF4C7 0%,
+      #F6DB7A 20%,
+      #D4AF37 48%,
+      #A87814 72%,
+      #FFE18C 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.betlab-emerald{
+  background:linear-gradient(
+      180deg,
+      #D8FFF6 0%,
+      #9AF4DE 12%,
+      #5EDCBD 26%,
+      #2BC89A 42%,
+      #12B887 58%,
+      #0A9C73 76%,
+      #055F47 90%,
+      #9AF4DE 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.betlab-card{
+  background:
+      linear-gradient(var(--bg-800),var(--bg-800)) padding-box,
+      linear-gradient(
+          135deg,
+          rgba(212,175,55,.35),
+          rgba(18,184,135,.28)
+      ) border-box;
+
+  border:1px solid transparent;
+  border-radius:18px;
+
+  box-shadow:
+      0 10px 30px rgba(0,0,0,.35),
+      inset 0 1px rgba(255,255,255,.03);
+}
+
+.betlab-button{
+  background:linear-gradient(
+      180deg,
+      #31D3A5,
+      #12B887,
+      #0A9C73
+  );
+
+  color:white;
+  border:none;
+  border-radius:12px;
+
+  box-shadow:
+      0 0 12px rgba(18,184,135,.28),
+      0 8px 22px rgba(0,0,0,.25);
+}
+
+.betlab-button:hover{
+  filter:brightness(1.08);
+}
+
+.betlab-sidebar{
+  background:
+      radial-gradient(circle at top,
+          rgba(212,175,55,.08),
+          transparent 25%),
+      linear-gradient(
+          180deg,
+          #020609,
+          #071018);
+}
+
+.betlab-active{
+  background:
+      linear-gradient(
+          90deg,
+          rgba(212,175,55,.18),
+          rgba(18,184,135,.12));
+
+  border-left:3px solid var(--gold-400);
+
+  color:var(--text-primary);
+}
