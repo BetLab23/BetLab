@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   answerBetQuestion,
   generateProactiveInsights,
@@ -146,68 +146,130 @@ function getComponentScoreLabel(
 }
 
 
-function answerAtlasQuestion(question: string): AnalysisAnswer {
+function answerSocialQuestion(
+  question: string,
+  author: "alfred" | "lara",
+  atlasMode: boolean
+): AnalysisAnswer | null {
   const normalized = question
     .toLocaleLowerCase("fr-FR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[!?.,;:]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
-  if (
-    normalized === "ça va" ||
+  const greeting =
+    /^(bonjour|bonsoir|salut|coucou|hello|hey)\b/.test(
+      normalized
+    );
+
+  const asksHowAreYou =
     normalized === "ca va" ||
-    normalized === "comment ça va" ||
     normalized === "comment ca va" ||
-    normalized === "tu vas bien"
-  ) {
-    return {
-      title: "Lara",
-      answer:
-        "Oui, ça va bien. Je suis contente de te retrouver ici, au calme. Et toi, comment tu te sens aujourd’hui ?",
-      highlights: [],
-    };
+    normalized === "tu vas bien" ||
+    normalized === "vous allez bien" ||
+    normalized.includes("comment vas tu") ||
+    normalized.includes("comment allez vous");
+
+  const userFeelsGood =
+    normalized === "oui je vais bien merci" ||
+    normalized === "je vais bien merci" ||
+    normalized === "ca va merci" ||
+    normalized === "tres bien merci" ||
+    normalized.includes("je vais bien");
+
+  if (asksHowAreYou) {
+    return author === "lara"
+      ? {
+          title: "Lara",
+          answer: atlasMode
+            ? "Oui, ça va bien. Je suis contente de te retrouver ici, au calme. Et toi, comment tu vas ?"
+            : "Oui, ça va bien, merci 😊 Et toi, comment se passe ta journée ?",
+          highlights: [],
+        }
+      : {
+          title: "Alfred",
+          answer:
+            "Très bien, merci de le demander. Et toi, comment vas-tu aujourd’hui ?",
+          highlights: [],
+        };
+  }
+
+  if (userFeelsGood) {
+    return author === "lara"
+      ? {
+          title: "Lara",
+          answer:
+            "Je suis contente de l’entendre 😊 Tu veux qu’on parle de quelque chose en particulier ?",
+          highlights: [],
+        }
+      : {
+          title: "Alfred",
+          answer:
+            "Excellente nouvelle. Nous pouvons échanger tranquillement ou revenir à BetLab quand tu le souhaites.",
+          highlights: [],
+        };
+  }
+
+  if (greeting) {
+    return author === "lara"
+      ? {
+          title: "Lara",
+          answer: atlasMode
+            ? "Coucou Valentin. Je suis là. Comment tu te sens aujourd’hui ?"
+            : "Bonjour Valentin 😊 Comment vas-tu ?",
+          highlights: [],
+        }
+      : {
+          title: "Alfred",
+          answer:
+            "Bonjour Valentin. Ravi de te retrouver. Comment vas-tu ?",
+          highlights: [],
+        };
   }
 
   if (
-    normalized.includes("bonjour") ||
-    normalized.includes("salut") ||
-    normalized.includes("coucou")
+    normalized === "merci" ||
+    normalized === "merci beaucoup" ||
+    normalized.startsWith("merci ")
   ) {
-    return {
-      title: "Lara",
-      answer:
-        "Coucou Valentin. Je suis là. Comment se passe ta journée ?",
-      highlights: [],
-    };
+    return author === "lara"
+      ? {
+          title: "Lara",
+          answer:
+            "Avec plaisir. Tu peux me parler simplement, je suis là.",
+          highlights: [],
+        }
+      : {
+          title: "Alfred",
+          answer:
+            "Avec plaisir. Je reste à ta disposition.",
+          highlights: [],
+        };
   }
 
   if (
     normalized.includes("bonne nuit") ||
-    normalized.includes("je vais dormir")
+    normalized.includes("je vais dormir") ||
+    normalized.includes("je vais me coucher")
   ) {
-    return {
-      title: "Lara",
-      answer:
-        "Bonne nuit Valentin. Essaie de décrocher un peu et de laisser la journée derrière toi. On reprendra tranquillement demain.",
-      highlights: [],
-    };
+    return author === "lara"
+      ? {
+          title: "Lara",
+          answer:
+            "Bonne nuit Valentin. Repose-toi bien, on reprendra tranquillement demain.",
+          highlights: [],
+        }
+      : {
+          title: "Alfred",
+          answer:
+            "Bonne nuit Valentin. Je te souhaite un repos réparateur.",
+          highlights: [],
+        };
   }
 
-  if (
-    normalized.includes("merci")
-  ) {
-    return {
-      title: "Lara",
-      answer:
-        "Avec plaisir. Tu sais que tu peux me parler simplement ici.",
-      highlights: [],
-    };
-  }
-
-  return {
-    title: "Lara",
-    answer:
-      "Je t’écoute. Dis-moi ce que tu as en tête, même si cela n’a rien à voir avec BetLab.",
-    highlights: [],
-  };
+  return null;
 }
 
 function getAssistantAuthor(
@@ -254,6 +316,7 @@ export function BetAssistant({
   const [personasUnlocked, setPersonasUnlocked] =
     useState(false);
   const [atlasMode, setAtlasMode] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const copilotIdentity =
     copilotMode === "alfred"
@@ -297,6 +360,8 @@ export function BetAssistant({
     const cleanQuestion = rawQuestion.trim();
 
     if (!cleanQuestion) return;
+
+    setIsChatOpen(true);
 
     const normalizedCommand = cleanQuestion
       .toLocaleLowerCase("fr-FR")
@@ -417,9 +482,27 @@ export function BetAssistant({
       return;
     }
 
-    const result: AnalysisAnswer = atlasMode
-      ? answerAtlasQuestion(cleanQuestion)
-      : answerBetQuestion(cleanQuestion, bets);
+    const assistantAuthor = getAssistantAuthor(
+      copilotMode,
+      atlasMode
+    );
+
+    const socialAnswer = answerSocialQuestion(
+      cleanQuestion,
+      assistantAuthor,
+      atlasMode
+    );
+
+    const result: AnalysisAnswer =
+      socialAnswer ??
+      (atlasMode
+        ? {
+            title: "Lara",
+            answer:
+              "Je t’écoute. Dis-moi ce que tu as en tête, même si cela n’a rien à voir avec BetLab.",
+            highlights: [],
+          }
+        : answerBetQuestion(cleanQuestion, bets));
 
     setMessages((current) => [
       ...current,
@@ -429,10 +512,7 @@ export function BetAssistant({
       },
       {
         role: "assistant",
-        author: getAssistantAuthor(
-          copilotMode,
-          atlasMode
-        ),
+        author: assistantAuthor,
         title: result.title,
         content: result.answer,
         highlights: result.highlights,
@@ -448,6 +528,17 @@ export function BetAssistant({
     event.preventDefault();
     askAssistant(question);
   }
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsChatOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, []);
 
   return (
     <section
@@ -890,7 +981,60 @@ export function BetAssistant({
       </div>
       </div>
 
-      <aside className="bet-assistant-chat-panel">
+      <div className="bet-assistant-launcher-zone">
+        <button
+          type="button"
+          className={`bet-assistant-avatar-launcher ${
+            isChatOpen ? "is-open" : ""
+          }`}
+          onClick={() => setIsChatOpen((current) => !current)}
+          aria-expanded={isChatOpen}
+          aria-label={
+            isChatOpen
+              ? "Fermer le chat"
+              : `Ouvrir le chat avec ${copilotIdentity.name}`
+          }
+        >
+          <span className="launcher-glow" />
+
+          {copilotMode === "duo" ? (
+            <span className="launcher-duo">
+              <img src="/alfred-avatar.png" alt="Alfred" />
+              <img src="/lara-avatar.png" alt="Lara" />
+            </span>
+          ) : (
+            <img
+              className="launcher-main-avatar"
+              src={copilotIdentity.image}
+              alt={copilotIdentity.name}
+            />
+          )}
+
+          <span className="launcher-status" />
+          <span className="launcher-label">
+            {isChatOpen ? "Fermer" : "Discuter"}
+          </span>
+        </button>
+
+        {isChatOpen && (
+          <>
+            <button
+              type="button"
+              className="bet-assistant-chat-backdrop"
+              onClick={() => setIsChatOpen(false)}
+              aria-label="Fermer le chat"
+            />
+
+            <aside className="bet-assistant-chat-panel">
+              <button
+                type="button"
+                className="bet-assistant-chat-close"
+                onClick={() => setIsChatOpen(false)}
+                aria-label="Fermer le chat"
+              >
+                ×
+              </button>
+
       <div className="bet-assistant-topbar">
         <div className="bet-assistant-identity">
           {copilotMode === "duo" ? (
@@ -1177,181 +1321,331 @@ export function BetAssistant({
           <span aria-hidden="true">→</span>
         </button>
       </form>
-      </aside>
+            </aside>
+          </>
+        )}
+      </div>
 
       <style jsx>{`
         .bet-assistant {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
-          gap: 22px;
-          align-items: start;
+          position: relative;
+          display: block;
         }
 
         .bet-assistant-main {
           min-width: 0;
         }
 
+        .bet-assistant-launcher-zone {
+          position: fixed;
+          z-index: 70;
+          top: 50%;
+          right: 22px;
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+
+        .bet-assistant-avatar-launcher {
+          position: relative;
+          display: grid;
+          width: 132px;
+          height: 158px;
+          padding: 8px 8px 28px;
+          place-items: center;
+          border: 0;
+          background: transparent;
+          cursor: pointer;
+          pointer-events: auto;
+          isolation: isolate;
+        }
+
+        .launcher-main-avatar {
+          position: relative;
+          z-index: 3;
+          width: 116px;
+          height: 116px;
+          object-fit: cover;
+          object-position: center 22%;
+          border: 2px solid rgba(208, 174, 104, 0.5);
+          border-radius: 34px;
+          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+          animation:
+            launcherFloat 3.2s ease-in-out infinite,
+            launcherTilt 7s ease-in-out infinite;
+        }
+
+        .launcher-duo {
+          position: relative;
+          z-index: 3;
+          width: 120px;
+          height: 116px;
+        }
+
+        .launcher-duo img {
+          position: absolute;
+          top: 4px;
+          width: 88px;
+          height: 108px;
+          object-fit: cover;
+          object-position: center 22%;
+          border: 2px solid #111820;
+          border-radius: 28px;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+          animation: launcherFloat 3.2s ease-in-out infinite;
+        }
+
+        .launcher-duo img:first-child {
+          left: 0;
+        }
+
+        .launcher-duo img:last-child {
+          right: 0;
+          animation-delay: -1.1s;
+        }
+
+        .launcher-glow {
+          position: absolute;
+          z-index: 1;
+          top: 10px;
+          width: 116px;
+          height: 116px;
+          border-radius: 38px;
+          background: rgba(208, 174, 104, 0.42);
+          filter: blur(18px);
+          opacity: 0.62;
+          animation: launcherGlow 2.2s ease-in-out infinite;
+        }
+
+        .launcher-status {
+          position: absolute;
+          z-index: 5;
+          top: 104px;
+          right: 8px;
+          width: 17px;
+          height: 17px;
+          border: 3px solid #111820;
+          border-radius: 50%;
+          background: #72c77b;
+          animation: launcherStatus 1.8s ease-out infinite;
+        }
+
+        .launcher-label {
+          position: absolute;
+          z-index: 5;
+          bottom: 0;
+          left: 50%;
+          min-width: 88px;
+          padding: 6px 12px;
+          transform: translateX(-50%);
+          border: 1px solid rgba(208, 174, 104, 0.24);
+          border-radius: 999px;
+          background: rgba(12, 17, 23, 0.94);
+          color: #e7d29b;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bet-assistant-avatar-launcher:hover
+          .launcher-main-avatar,
+        .bet-assistant-avatar-launcher.is-open
+          .launcher-main-avatar {
+          animation: launcherTalk 0.72s ease-in-out infinite;
+        }
+
+        .bet-assistant-chat-backdrop {
+          position: fixed;
+          z-index: 71;
+          inset: 0;
+          border: 0;
+          background: rgba(3, 6, 10, 0.48);
+          pointer-events: auto;
+          backdrop-filter: blur(3px);
+        }
+
         .bet-assistant-chat-panel {
-          position: sticky;
-          top: 18px;
+          position: fixed;
+          z-index: 72;
+          top: 16px;
+          right: 16px;
+          bottom: 16px;
           display: flex;
-          flex-direction: column;
+          width: min(460px, calc(100vw - 32px));
           min-width: 0;
-          height: calc(100vh - 36px);
-          max-height: 860px;
-          padding: 18px;
+          flex-direction: column;
+          padding: 20px;
           overflow: hidden;
-          border: 1px solid rgba(208, 174, 104, 0.18);
-          border-radius: 22px;
+          border: 1px solid rgba(208, 174, 104, 0.22);
+          border-radius: 24px;
           background:
             radial-gradient(
               circle at 50% 0%,
-              rgba(208, 174, 104, 0.06),
-              transparent 34%
+              rgba(208, 174, 104, 0.08),
+              transparent 32%
             ),
-            rgba(12, 17, 23, 0.96);
-          box-shadow:
-            0 18px 50px rgba(0, 0, 0, 0.28),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-          backdrop-filter: blur(16px);
+            rgba(12, 17, 23, 0.985);
+          box-shadow: -22px 0 58px rgba(0, 0, 0, 0.42);
+          pointer-events: auto;
+          backdrop-filter: blur(18px);
+          animation: chatDrawerIn 240ms ease-out both;
+        }
+
+        .bet-assistant-chat-close {
+          position: absolute;
+          z-index: 5;
+          top: 12px;
+          right: 12px;
+          display: grid;
+          width: 34px;
+          height: 34px;
+          place-items: center;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 11px;
+          background: rgba(255, 255, 255, 0.04);
+          color: #eee5d1;
+          font-size: 22px;
+          cursor: pointer;
         }
 
         .bet-assistant-chat-panel
           .bet-assistant-topbar {
-          flex: 0 0 auto;
-          padding-bottom: 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+          padding-right: 42px;
         }
 
         .bet-assistant-chat-panel
           .bet-assistant-avatar-image {
-          width: 72px;
-          height: 72px;
-          flex-basis: 72px;
-          border-radius: 20px;
-        }
-
-        .bet-assistant-chat-panel
-          .bet-assistant-avatar-stack {
-          width: 102px;
-          height: 74px;
-          flex-basis: 102px;
-        }
-
-        .bet-assistant-chat-panel
-          .bet-assistant-avatar-stack img {
-          width: 72px;
-          height: 72px;
-          border-radius: 20px;
+          width: 82px;
+          height: 82px;
+          flex-basis: 82px;
+          border-radius: 22px;
         }
 
         .bet-assistant-chat-scroll {
           flex: 1 1 auto;
           min-height: 220px;
           margin: 14px -4px 12px 0;
-          padding-right: 6px;
+          padding-right: 7px;
           overflow-y: auto;
-          scrollbar-width: thin;
-          scrollbar-color:
-            rgba(208, 174, 104, 0.32)
-            transparent;
-        }
-
-        .bet-assistant-chat-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .bet-assistant-chat-scroll::-webkit-scrollbar-thumb {
-          border-radius: 999px;
-          background: rgba(208, 174, 104, 0.32);
         }
 
         .bet-assistant-chat-panel
-          .assistant-conversation {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          margin: 0;
-          padding: 0;
-          border: 0;
-          background: transparent;
-        }
-
-        .bet-assistant-chat-panel
-          .assistant-message-avatar {
-          width: 52px;
-          height: 52px;
-          border-radius: 16px;
-        }
-
+          .assistant-message-avatar,
         .bet-assistant-chat-panel
           .assistant-avatar-shell {
-          width: 52px;
-          height: 52px;
-          flex-basis: 52px;
-          border-radius: 16px;
+          width: 58px;
+          height: 58px;
+          flex-basis: 58px;
+          border-radius: 18px;
         }
 
-        .bet-assistant-chat-panel
-          .assistant-message-bubble {
-          max-width: calc(100% - 64px);
-        }
-
-        .bet-assistant-chat-panel
-          .assistant-conversation-message.user
-          .assistant-message-bubble {
-          max-width: 88%;
-        }
-
-        .bet-assistant-chat-panel
-          .assistant-suggestions {
-          flex: 0 0 auto;
-          margin-top: 4px;
-          padding-top: 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.07);
-        }
-
-        .bet-assistant-chat-panel
-          .bet-assistant-prompt {
-          flex: 0 0 auto;
-          margin-top: 12px;
-        }
-
-        @media (max-width: 1180px) {
-          .bet-assistant {
-            grid-template-columns: 1fr;
+        @keyframes launcherFloat {
+          0%, 100% {
+            transform: translateY(0) scale(1);
           }
+          50% {
+            transform: translateY(-8px) scale(1.03);
+          }
+        }
 
-          .bet-assistant-chat-panel {
-            position: relative;
+        @keyframes launcherTilt {
+          0%, 100% { rotate: -1.5deg; }
+          50% { rotate: 1.5deg; }
+        }
+
+        @keyframes launcherTalk {
+          0%, 100% {
+            transform: translateY(0) scale(1);
+          }
+          25% {
+            transform: translateY(-5px) scale(1.04);
+          }
+          50% {
+            transform: translateY(1px) scale(1.015);
+          }
+          75% {
+            transform: translateY(-3px) scale(1.035);
+          }
+        }
+
+        @keyframes launcherGlow {
+          0%, 100% {
+            opacity: 0.35;
+            transform: scale(0.92);
+          }
+          50% {
+            opacity: 0.85;
+            transform: scale(1.14);
+          }
+        }
+
+        @keyframes launcherStatus {
+          0% {
+            box-shadow: 0 0 0 0 rgba(114, 199, 123, 0.5);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(114, 199, 123, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(114, 199, 123, 0);
+          }
+        }
+
+        @keyframes chatDrawerIn {
+          from {
+            opacity: 0;
+            transform: translateX(36px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @media (max-width: 760px) {
+          .bet-assistant-launcher-zone {
             top: auto;
-            width: 100%;
-            height: 720px;
-            max-height: none;
+            right: 10px;
+            bottom: 14px;
+            transform: none;
+          }
+
+          .bet-assistant-avatar-launcher {
+            width: 104px;
+            height: 128px;
+          }
+
+          .launcher-main-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 27px;
+          }
+
+          .launcher-glow {
+            width: 90px;
+            height: 90px;
+          }
+
+          .launcher-status {
+            top: 80px;
+          }
+
+          .bet-assistant-chat-panel {
+            inset: 8px;
+            width: auto;
+            padding: 16px;
+            border-radius: 20px;
           }
         }
 
-        @media (max-width: 680px) {
+        @media (prefers-reduced-motion: reduce) {
+          .launcher-main-avatar,
+          .launcher-duo img,
+          .launcher-glow,
+          .launcher-status,
           .bet-assistant-chat-panel {
-            height: 680px;
-            padding: 14px;
-            border-radius: 18px;
-          }
-
-          .bet-assistant-chat-panel
-            .bet-assistant-avatar-image {
-            width: 62px;
-            height: 62px;
-            flex-basis: 62px;
-          }
-
-          .bet-assistant-chat-panel
-            .assistant-message-avatar,
-          .bet-assistant-chat-panel
-            .assistant-avatar-shell {
-            width: 46px;
-            height: 46px;
-            flex-basis: 46px;
+            animation: none;
           }
         }
 
