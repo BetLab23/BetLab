@@ -1130,3 +1130,196 @@ button,input{font:inherit}.shell{display:grid;grid-template-columns:250px 1fr;mi
     display:none;
   }
 }
+:root {
+  --betlab-bg: #07090c;
+  --betlab-bg-elevated: #0d1217;
+  --betlab-surface: #11181e;
+  --betlab-surface-2: #162128;
+  --betlab-border: rgba(231, 198, 111, 0.16);
+  --betlab-border-soft: rgba(255, 255, 255, 0.07);
+
+  --betlab-gold: #e7c66f;
+  --betlab-gold-light: #f4dc91;
+  --betlab-gold-deep: #9d7832;
+
+  --betlab-emerald: #4fd3a0;
+  --betlab-emerald-light: #75e4ba;
+  --betlab-emerald-deep: #167a5a;
+
+  --betlab-text: #f5f2e9;
+  --betlab-text-soft: #aab7be;
+  --betlab-danger: #ef8585;
+  --betlab-warning: #e7b969;
+
+  --betlab-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(79, 211, 160, 0.08), transparent 28%),
+    radial-gradient(circle at 84% 2%, rgba(231, 198, 111, 0.08), transparent 26%),
+    var(--betlab-bg);
+  color: var(--betlab-text);
+}
+
+body {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(79, 211, 160, 0.26);
+  color: #fff;
+}
+
+.betlab-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.betlab-brand img {
+  flex: 0 0 auto;
+  filter:
+    drop-shadow(0 0 12px rgba(231, 198, 111, 0.17))
+    drop-shadow(0 0 14px rgba(79, 211, 160, 0.09));
+}
+
+.betlab-brand-copy {
+  display: grid;
+  line-height: 1;
+}
+
+.betlab-brand-copy strong {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+}
+
+.betlab-brand-copy small {
+  margin-top: 5px;
+  color: #728087;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.42em;
+}
+
+.betlab-brand.compact {
+  gap: 9px;
+}
+
+.betlab-brand.compact .betlab-brand-copy strong {
+  font-size: 18px;
+}
+
+.betlab-gold {
+  color: var(--betlab-gold);
+}
+
+.betlab-emerald {
+  color: var(--betlab-emerald);
+}
+
+.betlab-app-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 180px);
+}
+
+.betlab-header {
+  position: sticky;
+  z-index: 50;
+  top: 0;
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px clamp(18px, 3vw, 38px);
+  border-bottom: 1px solid var(--betlab-border-soft);
+  background: rgba(7, 9, 12, 0.82);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.betlab-card {
+  border: 1px solid var(--betlab-border-soft);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.028), transparent 42%),
+    var(--betlab-surface);
+  box-shadow: var(--betlab-shadow);
+}
+
+.betlab-primary-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(79, 211, 160, 0.34);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(79, 211, 160, 0.22), rgba(79, 211, 160, 0.08));
+  color: var(--betlab-emerald-light);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.betlab-primary-button:hover {
+  border-color: rgba(79, 211, 160, 0.58);
+  box-shadow: 0 0 24px rgba(79, 211, 160, 0.13);
+}
+
+.betlab-secondary-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid rgba(231, 198, 111, 0.25);
+  border-radius: 12px;
+  background: rgba(231, 198, 111, 0.07);
+  color: var(--betlab-gold-light);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.betlab-nav-link {
+  color: var(--betlab-text-soft);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.betlab-nav-link:hover,
+.betlab-nav-link[aria-current="page"] {
+  color: var(--betlab-gold-light);
+}
+
+.betlab-kpi-positive {
+  color: var(--betlab-emerald-light);
+}
+
+.betlab-kpi-negative {
+  color: var(--betlab-danger);
+}
+
+@media (max-width: 720px) {
+  .betlab-header {
+    min-height: 66px;
+    padding-inline: 14px;
+  }
+
+  .betlab-brand-copy strong {
+    font-size: 18px;
+  }
+
+  .betlab-brand-copy small {
+    font-size: 8px;
+  }
+}
