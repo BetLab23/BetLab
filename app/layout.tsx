@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
+import { BetLabHeader } from "@/components/BetLabHeader";
 
 export const metadata: Metadata = {
   title: { default: "BetLab", template: "%s | BetLab" },
