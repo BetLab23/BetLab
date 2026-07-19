@@ -20,7 +20,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr">
-      <body><AppShell>{children}</AppShell></body>
+      <body>
+  <div className="betlab-app-shell">
+    <BetLabHeader />
+    {children}
+  </div>
+</body>>
     </html>
   );
 }
