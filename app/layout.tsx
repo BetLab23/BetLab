@@ -25,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <BetLabHeader />
     {children}
   </div>
-</body>>
+</body>
     </html>
   );
 }
